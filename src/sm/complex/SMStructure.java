@@ -6,29 +6,34 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.apache.commons.collections4.FunctorException;
 
+import ghidra.util.task.CancelledListener;
+import ghidra.util.task.TaskDialog;
 import sm.SMContainer;
 import sm.SMContainerBuilder;
 import sm.SMFunctionObject;
 import sm.util.CacheUtil;
+import sm.util.Util;
 
 public class SMStructure {
 	public static final boolean SHOW_ADDRESS = false;
 	public static final boolean TRACE = false;
 	
+	public static final int DECOMPILE_TIMEOUT = 10;
+	
 	private SMContainer container;
 	
 	public SMStructure(boolean load) {
-		if(CacheUtil.exists("SMContainerEvaluate.ser")) {
-			SMContainer container = CacheUtil.load("SMContainerEvaluate.ser");
-			printTrace(container);
+		if(CacheUtil.exists("SMContainerEvaluated.ser")) {
+			//SMContainer container = CacheUtil.load("SMContainerEvaluated.ser");
+			//printTrace(container);
 			
-			return;
+			//return;
 		}
-		
-		if(true) return;
 		
 		if(load) {
 			container = CacheUtil.load("SMContainer.ser");
@@ -60,43 +65,54 @@ public class SMStructure {
 	}
 	
 	private boolean evaluating;
-	public void evaluate() {
+	
+	/**
+	 * This function uses a {@link ConcurrentLinkedQueue} to distribute the functions
+	 * to decompile equally over multiple threads.
+	 */
+	public synchronized void evaluate() {
 		if(container == null) return;
-		//if(true) return;
-		
 		if(evaluating) throw new IllegalAccessError("Is already running!");
 		evaluating = true;
-		
-		final SMFunctionObject[] FUNCTIONS = container.getAllFunctions().toArray(SMFunctionObject[]::new);
 		final int NUM_THREADS = 14;
-		final int SIZE = FUNCTIONS.length / NUM_THREADS;
+		Set<SMFunctionObject> functions = container.getAllFunctions();
+		final ConcurrentLinkedQueue<SMFunctionObject> queue = new ConcurrentLinkedQueue<SMFunctionObject>(functions);
+		
+		// TODO: If by somehow something makes everything crash and TaskDialog is not disposed
+		//       Then the dialog will be blocking inputs and wont let the user do anything.
+		TaskDialog monitor = new TaskDialog("Fuzzing all the functions", true, true, true);
+		monitor.setMessage("Exploring functions");
+		monitor.setShowProgressValue(true);
+		monitor.clearCanceled();
+		monitor.initialize(functions.size());
+		monitor.setCancelEnabled(true);
+		monitor.setIndeterminate(false);
+		monitor.show(0);
+		CancelledListener listener = new CancelledListener() {
+			public void cancelled() {
+				Util.getMonitor().cancel();
+			}
+		};
+		monitor.addCancelledListener(listener);
 		
 		ThreadGroup group = new ThreadGroup("Evaluate Group");
 		List<Thread> threads = new ArrayList<>();
 		
-		int left = FUNCTIONS.length - SIZE * NUM_THREADS;
-		int offset = 0;
 		for(int i = 0; i < NUM_THREADS; i++) {
-			int sz = SIZE;
-			
-			if(i < left) {
-				sz++;
-			}
-			
-			final int obj_size = sz;
-			final int obj_offset = offset;
-			offset += sz;
 			final int id = i;
 			Thread thread = new Thread(group, () -> {
-				SMFunctionObject[] objects = new SMFunctionObject[obj_size];
-				System.arraycopy(FUNCTIONS, obj_offset, objects, 0, obj_size);
-				
 				FunctionExplorer3 explorer = new FunctionExplorer3();
 				
 				try {
-					for(SMFunctionObject obj : objects) {
+					while(!queue.isEmpty()) {
+						if(Util.isMonitorCancelled()) break;
+						
+						SMFunctionObject obj = queue.poll();
+						if(obj == null) break;
+						
 						System.out.printf("[Worker ID#%d]: Exploring: %s\n", id, obj);
 						explorer.evaluate(obj);
+						monitor.incrementProgress(1);
 					}
 				} catch(Exception e) {
 					e.printStackTrace();
@@ -121,16 +137,20 @@ public class SMStructure {
 			}
 		}
 		
+		monitor.removeCancelledListener(listener);
+		monitor.dispose();
+		monitor.close();
+		
 		evaluating = false;
 		
 		System.out.println();
 		System.out.println("");
-		for(int i = 0; i < FUNCTIONS.length; i++) {
-			SMFunctionObject function = FUNCTIONS[i];
+		for(SMFunctionObject function : functions) {
+			if(function.getFuzzedFunction() == null) continue;
 			System.out.println(function);
 		}
 		
-		CacheUtil.save("SMContainerEvaluate.ser", container);
+		CacheUtil.save("SMContainerEvaluated.ser", container);
 		printTrace(container);
 	}
 	

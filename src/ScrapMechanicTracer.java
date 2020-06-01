@@ -25,23 +25,6 @@ public class ScrapMechanicTracer extends GhidraScript {
 		DevUtil.replacePrintStreams(this);
 		DevUtil.replaceGhidraBin(this);
 		
-		// Allow the user to close this script if it takes
-		// to long to execute
-		final Thread sm_thread = Thread.currentThread();
-		@SuppressWarnings("deprecation")
-		Thread thread = new Thread(sm_thread.getThreadGroup(), () -> {
-			try {
-				while(!monitor.isCancelled()) Thread.sleep(20);
-			} catch(InterruptedException e) {
-				
-			}
-			
-			sm_thread.stop();
-		});
-		thread.setDaemon(true);
-		thread.start();
-		
-		
 		// Initialize the util
 		Util.init(this);
 		
@@ -61,9 +44,6 @@ public class ScrapMechanicTracer extends GhidraScript {
 			try {
 				ScrapMechanic.launch();
 			} catch(Exception e) {
-				e.printStackTrace();
-			} catch(Throwable e) {
-				// ThreadDeath
 				e.printStackTrace();
 			}
 			

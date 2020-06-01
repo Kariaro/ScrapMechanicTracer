@@ -10,6 +10,7 @@ import ghidra.program.model.address.AddressFactory;
 import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
+import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.pcode.HighFunction;
 import ghidra.program.model.pcode.PcodeOp;
@@ -31,6 +32,13 @@ public class Util {
 		return SCRIPT.getMonitor();
 	}
 	
+	public static boolean isMonitorCancelled() {
+		return SCRIPT.getMonitor().isCancelled();
+	}
+	
+	public static Program getProgram() {
+		return SCRIPT.getCurrentProgram();
+	}
 	
 	
 	public static boolean isValidAddress(Address addr) {
@@ -58,9 +66,9 @@ public class Util {
 				addr = addr.add(1);
 			}
 		} catch(Exception e) {
-			// TODO: 
+			// TODO: Print something here!
 			
-			//e.printStackTrace();
+			e.printStackTrace();
 		}
 		
 		if(bs.size() == 0) {

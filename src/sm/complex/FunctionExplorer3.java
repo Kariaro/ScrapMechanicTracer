@@ -14,7 +14,6 @@ import ghidra.program.model.data.DataType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Parameter;
-import ghidra.program.model.listing.VariableStorage;
 import ghidra.program.model.pcode.HighFunction;
 import ghidra.program.model.pcode.HighVariable;
 import ghidra.program.model.pcode.PcodeOp;
@@ -37,7 +36,8 @@ import sm.util.Util;
  */
 public class FunctionExplorer3 implements Closeable {
 	private static final String CALL = "CALL";
-	private static final int MAX_DEPTH = 2;
+	private static final String COPY = "COPY";
+	private static final int MAX_DEPTH = 3;
 	
 	private boolean isClosed;
 	
@@ -48,6 +48,7 @@ public class FunctionExplorer3 implements Closeable {
 		decomp.toggleCCode(false);
 		decomp.openProgram(Util.getScript().getCurrentProgram());
 		
+		// TODO: If this DataType does not exist we should create it.
 		LUA_STATE_PTR = Util.getScript().getCurrentProgram().getDataTypeManager().getDataType("/lua.h/lua_State *");
 	}
 	
@@ -80,28 +81,39 @@ public class FunctionExplorer3 implements Closeable {
 			}
 		}
 		
-		enterFunction(fuzzed, null, function.getEntryPoint(), 0, varnode);
+		enterFunction(fuzzed, function.getEntryPoint(), 0, varnode);
 		object.setFuzzedFunction(fuzzed);
 		
 		return fuzzed;
 	}
 	
-	private void enterFunction(FuzzedFunction fuzzed, HighFunction parent, Address callAddress, int depth, Varnode[] params) {
+	private void enterFunction(FuzzedFunction fuzzed, Address callAddress, int depth, Varnode[] params) {
+		if(Util.isMonitorCancelled()) return;
+		
 		Function function = Util.getFunctionAt(callAddress);
 		if(function == null) return;
 		
-		DecompileResults result = decomp.decompileFunction(function, 10, Util.getMonitor());
+		DecompileResults result = decomp.decompileFunction(function, SMStructure.DECOMPILE_TIMEOUT, null);
 		HighFunction local = result.getHighFunction();
 		if(local == null) {
+			/* This is usually the result of a TimeoutException or that the
+			 * TaskMonitor was closed.
+			 * 
+			 * This is because some functions take more than 30 seconds to
+			 * complete and they should probably be handled separatly.
+			 */
 			System.err.println("The generated HighFunction was null ! Error: " + result.getErrorMessage());
-			//throw new NullPointerException("The generated HighFunction was null ! Error: " + result.getErrorMessage());
 			return;
 		}
 		
-		traverseFunction(fuzzed, parent, local, depth, params);
+		try {
+			traverseFunction(fuzzed, local, depth, params);
+		} catch(Throwable e) {
+			e.printStackTrace();
+		}
 	}
 	
-	private void traverseFunction(FuzzedFunction fuzzed, HighFunction parent, HighFunction local, int depth, Varnode[] params) {
+	private void traverseFunction(FuzzedFunction fuzzed, HighFunction local, int depth, Varnode[] params) {
 		List<Instruction> instructions = getCallInstructions(local);
 		
 		for(int instIndex = 0; instIndex < instructions.size(); instIndex++) {
@@ -115,6 +127,7 @@ public class FunctionExplorer3 implements Closeable {
 			PcodeOpAST command = iter.next();
 			Address callAddress = command.getInput(0).getAddress();
 			
+			
 			if(LuaUtil.isLuaFunctionPointer(callAddress)) {
 				String function = LuaUtil.getNameFromPointerAddress(callAddress);
 				Varnode[] nextParams = resolveParams(command, local, params);
@@ -122,13 +135,6 @@ public class FunctionExplorer3 implements Closeable {
 				if(TRACE) {
 					System.out.printf("%s, CALL LUA51::%s\n", instAddress, function);
 					
-					/*if(TRACE) {
-						for(int i = 1; i < command.getNumInputs(); i++) {
-							Varnode node = command.getInput(i);
-							System.out.printf("        args[%d]: %s\n", i, node);
-						}
-						System.out.println();
-					}*/
 					for(int i = 0; i < nextParams.length; i++) {
 						Varnode node = nextParams[i];
 						System.out.printf("        args[%d]: %s\n", i, node);
@@ -136,8 +142,7 @@ public class FunctionExplorer3 implements Closeable {
 					System.out.println();
 				}
 				
-				processCommandNew(fuzzed, function, command, nextParams);
-				//processCommand(fuzzed, function, inst, command, set.getFunction().getParameters(), params);
+				processCommand(fuzzed, function, command, nextParams);
 			} else if(depth < MAX_DEPTH) {
 				if(TRACE) {
 					System.out.println("---------------------------------");
@@ -150,6 +155,10 @@ public class FunctionExplorer3 implements Closeable {
 				 * called from the server or the client.
 				 * 
 				 * This function does not access the 'lua_State' parameter.
+				 * 
+				 * This function usually contains the strings
+				 *   "Sandbox violation: callback while no sandbox is present."
+				 *   "Sandbox violation: calling %s function from %s callback."
 				 */
 				if(instIndex == 0) {
 					if(TRACE) {
@@ -180,7 +189,7 @@ public class FunctionExplorer3 implements Closeable {
 						Function nextFunction = Util.getFunctionAt(callAddress);
 						
 						// TODO: This is really unexpected
-						if(nextFunction == null) return;
+						if(nextFunction == null) break;
 						
 						Parameter[] nextFunctionParams = nextFunction.getParameters();
 						if(nextFunctionParams.length > i) {
@@ -214,7 +223,7 @@ public class FunctionExplorer3 implements Closeable {
 						System.out.println();
 					}
 					
-					enterFunction(fuzzed, local, callAddress, depth + 1, nextParams);
+					enterFunction(fuzzed, callAddress, depth + 1, nextParams);
 				}
 			}
 		}
@@ -225,19 +234,6 @@ public class FunctionExplorer3 implements Closeable {
 		
 		Varnode[] result = new Varnode[command.getNumInputs() - 1];
 		Parameter[] params = local.getFunction().getParameters();
-		/*for(int i = 0; i < params.length; i++) {
-			Parameter param = params[i];
-			System.out.printf("        param[%d]: %s\t -> %s\n", i, param, inputs[i]);
-		}
-		System.out.println();
-		
-		
-		for(int i = 0; i < inputs.length; i++) {
-			Varnode node = inputs[i];
-			System.out.printf("          inp[%d]: %s\n", i, node);
-		}
-		System.out.println();
-		*/
 		
 		for(int i = 1; i < command.getNumInputs(); i++) {
 			Varnode node = command.getInput(i);
@@ -336,7 +332,7 @@ public class FunctionExplorer3 implements Closeable {
 		return list;
 	}
 	
-	private boolean checkArgErrorNew(FuzzedFunction fuzzed, PcodeOpAST command, Varnode[] newParams) {
+	private boolean checkArgError(FuzzedFunction fuzzed, PcodeOpAST command, Varnode[] newParams) {
 		if(newParams.length < 3) return false;
 		
 		//System.out.println("      : len = " + newParams.length);
@@ -384,10 +380,73 @@ public class FunctionExplorer3 implements Closeable {
 		return false;
 	}
 	
-	private void processCommandNew(FuzzedFunction fuzzed, String name, PcodeOpAST command, Varnode[] nextParams) {
-		// TODO: If "luaL_checklstring" is input for "lua_pushfstring" then it is not an argument!
-		// lua_pushfstring(param_1,"%s expected, got %s","number",extramsg);
+	private boolean checkLuaError(FuzzedFunction fuzzed, PcodeOpAST command, Varnode[] newParams) {
+		if(command.getNumInputs() < 4) return false;
 		
+		//System.out.println("Testing : " + command);
+		
+		//for(int i = 1; i < command.getNumInputs(); i++) {
+		//Varnode input = command.getInput(i);
+		//System.out.printf("        [%d]: %s\n", i, input);
+		//}
+		
+		//System.out.println();
+		
+		PcodeOp[] msgCount = new PcodeOp[4];
+		
+		for(int i = 2; i < 4; i++) {
+			Varnode input = command.getInput(i);
+			//System.out.printf("        [%d]: %s\n", i, input);
+			if(input == null) continue;
+			
+			HighVariable hv = input.getHigh();
+			//System.out.printf("          high: %s\n", hv.getName());
+			
+			int count = 0;
+			Varnode[] mem = hv.getInstances();
+			for(int j = 0; j < mem.length; j++) {
+				Varnode m = mem[j];
+				PcodeOp op = m.getDef();
+				if(op == null) continue;
+				
+				if(COPY.equals(op.getMnemonic())) {
+					//System.out.printf("              [%d]: %s\n", j, op);
+					msgCount[(i - 2) * 2 + (count++)] = op;
+					if(count > 1) break;
+				}
+			}
+			
+			//System.out.println();
+		}
+		
+		for(int i = 0; i < 4; i++) {
+			if(msgCount[i] == null) return false;
+			//System.out.printf("        [%d]: %s\n", i, msgCount[i]);
+		}
+		
+		// Read message
+		for(int i = 0; i < 2; i++) {
+			String str = Util.readTerminatedString(Util.getAddressFromLong(msgCount[i].getInput(0).getOffset()));
+			if(str == null) return false;
+			
+			int args = Util.toSignedInt(msgCount[i + 2].getInput(0).getOffset());
+			if(str.startsWith("Expected %d arguments")) {
+				fuzzed.minimumArguments = args;
+				fuzzed.maximumArguments = args;
+			} else if(str.startsWith("Expected at most %d arguments")) {
+				fuzzed.maximumArguments = args;
+			} else if(str.startsWith("Expected at least %d arguments")) {
+				fuzzed.minimumArguments = args;
+			} else {
+				// This should never run
+				fuzzed.errors.add(str);
+			}
+		}
+		
+		return true;
+	}
+	
+	private void processCommand(FuzzedFunction fuzzed, String name, PcodeOpAST command, Varnode[] nextParams) {
 		switch(name) {
 			case "luaL_checkudata": {
 				if(nextParams.length < 3) break;
@@ -413,10 +472,12 @@ public class FunctionExplorer3 implements Closeable {
 				return;
 			}
 			case "luaL_argerror": {
-				checkArgErrorNew(fuzzed, command, nextParams);
+				checkArgError(fuzzed, command, nextParams);
 				break;
 			}
 			case "luaL_error": {
+				checkLuaError(fuzzed, command, nextParams);
+				
 				if(nextParams.length < 3) break;
 				String str = getStringFromUnique(nextParams[1]);
 				if(TRACE) {
@@ -466,61 +527,14 @@ public class FunctionExplorer3 implements Closeable {
 				fuzzed.setArgument(index, "boolean");
 				return;
 			}
-			/*
-			case "luaL_checkinteger": {
-				if(computed.length < 3) break;
-				int index = Util.toSignedInt(Util.getPcodeVarnode(computed, 2).getOffset());
-				fuzzed.setArgument(index, "number");
-				return;
-			}
-			case "luaL_checknumber": {
-				if(computed.length < 3) break;
-				int index = Util.toSignedInt(Util.getPcodeVarnode(computed, 2).getOffset());
-				fuzzed.setArgument(index, "number");
-				return;
-			}
-			case "lua_isnumber": { // TODO: ????
-				if(computed.length < 3) break;
-				int index = Util.toSignedInt(Util.getPcodeVarnode(computed, 2).getOffset());
-				fuzzed.setArgument(index, "number");
-				return;
-			}
-			case "lua_getmetatable": {
-				if(computed.length < 3) break;
-				//int index = Util.toSignedInt(Util.getPcodeVarnode(computed, 2).getOffset());
-				
-				// TODO: maybe more aproperiate "userdata"?????
-				//fuzzed.setArgument(index, "table");
-				return;
-			}
-			case "lua_getfield": {
-				if(computed.length < 4) break;
-				
-				long index = Util.toSignedInt(Util.getPcodeVarnode(computed, 2).getOffset());
-				String str = getStringFromUnique(Util.getPcodeVarnode(computed, 3, 0).getAddress());
-				if(TRACE) System.out.printf("  lua_getfield(lua_State, index = %d, \"%s\");\n", index, str);
-				
-				fuzzed.setArgument(index, str);
-				return;
-			}
-			case "lua_type": {
-				//if(computed.length < 3) break;
-				
-				//long index = Util.toSignedInt(computed[2].getOffset());
-				//if(TRACE) System.out.printf("  lua_type(lua_State, %d);\n", index);
-				
-				return;
-			}
-			case "lua_pushfstring": {
-				if(computed.length < 4) break;
-				
-				String str = getStringFromUnique(Util.getPcodeVarnode(computed, 2, 0).getAddress());
-				if(TRACE) System.out.printf("  lua_pushfstring(lua_State, \"%s\");\n", str);
-				
-				break;
-			}
-			*/
 			
+			// TODO: By using 'LuaUtil.getTypeNameFromId' this could be used to check what branches
+			//       leads to a call to 'luaL_error'.
+			case "lua_type": return;
+			
+			case "lua_getfield": return;
+			case "lua_isnumber": return; // TODO: ???? 
+			case "lua_getmetatable": return; // TODO: Sometimes this is used to create sub tables for returns and other stuff.
 			case "lua_typename": return;
 			case "lua_topointer": return;
 			case "lua_gettop": return; // TODO: This function gets the amount of arguments on the stack
@@ -529,10 +543,11 @@ public class FunctionExplorer3 implements Closeable {
 				// Do nothing
 			}
 		}
+		
 		/*
 		if(TRACE) {
-			for(int i = 1; i < computed.length; i++) {
-				Varnode input = computed[i];
+			for(int i = 1; i < nextParams.length; i++) {
+				Varnode input = nextParams[i];
 				if(input.isConstant()) {
 					System.out.printf("      [%d] %s\n", i, Util.toSignedInt(input.getOffset()));
 				} else if(input.isUnique()) {
