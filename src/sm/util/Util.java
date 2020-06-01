@@ -1,7 +1,6 @@
 package sm.util;
 
 import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,6 +12,7 @@ import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.pcode.HighFunction;
+import ghidra.program.model.pcode.PcodeOp;
 import ghidra.program.model.pcode.PcodeOpAST;
 import ghidra.program.model.pcode.Varnode;
 import ghidra.util.task.TaskMonitor;
@@ -106,7 +106,7 @@ public class Util {
 		try {
 			bytes = SCRIPT.getBytes(func.getEntryPoint(), getFunctionLength(func));
 		} catch(MemoryAccessException e) {
-			printStackTrace(e);
+			e.printStackTrace();
 			return null;
 		}
 		
@@ -134,13 +134,6 @@ public class Util {
 		return true;
 	}
 	
-	@Deprecated
-	public static void printStackTrace(Throwable e) {
-		ByteArrayOutputStream bs = new ByteArrayOutputStream();
-		e.printStackTrace(new PrintStream(bs));
-		SCRIPT.printerr(new String(bs.toByteArray()));
-	}
-
 	public static Function getFunctionAt(Address addr) {
 		Function result = SCRIPT.getFunctionAt(addr);
 		if(result == null) {
@@ -161,8 +154,16 @@ public class Util {
 		return SCRIPT.getInstructionAt(address);
 	}
 	
+	public static Instruction getInstructionAt(HighFunction function) {
+		return SCRIPT.getInstructionAt(function.getFunction().getEntryPoint());
+	}
+	
 	public static Instruction getInstructionBefore(Address address) {
 		return SCRIPT.getInstructionBefore(address);
+	}
+	
+	public static Instruction getInstructionBefore(HighFunction function) {
+		return SCRIPT.getInstructionBefore(function.getFunction().getEntryPoint());
 	}
 
 	public static long getOffset(Function func, Address addr) {
@@ -206,7 +207,11 @@ public class Util {
 		if(node == null) return null;
 		
 		for(int i = 1; i < arr.length; i++) {
-			node = node.getDef().getInput(arr[i]);
+			PcodeOp op = node.getDef();
+			if(op == null) return null;
+			if(arr[i] >= op.getNumInputs()) return null;
+			
+			node = op.getInput(arr[i]);
 		}
 		return node;
 	}
@@ -252,9 +257,15 @@ public class Util {
 		return getAddress(Integer.toHexString(offset));
 	}
 	
-	// TODO: Implement
-	@Deprecated
-	public static String getFunctionHash(Function func) {
-		return null;
+	
+	/**
+	 * This method reads all bytes from a function and hashes it.
+	 * This is used when caching functions to faster decompile sources.
+	 * 
+	 * @param func
+	 * @return
+	 */
+	@Deprecated public static String getFunctionHash(Function func) {
+		throw new UnsupportedOperationException("Implement this function!");
 	}
 }

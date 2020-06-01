@@ -1,28 +1,29 @@
 // @author HardCoded
-// @category ScrapMechanic
+// @category ScrapMechanicTracer
 // @keybinding 
 // @menupath 
 // @toolbar 
 
 import ghidra.app.script.GhidraScript;
+import sm.util.CacheUtil;
 import sm.util.LuaUtil;
+import sm.util.ScrapMechanic;
 import sm.util.Util;
 
-public class PrintScrapMechanicStructure extends GhidraScript {
-	private static final boolean DEV_RECOMPILE = true;
+/**
+ * This ghidra script is used to print the ScrapMechanic lua structure to a file.
+ * It will get the different functions and all the arguments to each function.
+ * 
+ * @author HardCoded
+ */
+public class ScrapMechanicTracer extends GhidraScript {
+	public static final void main(String[] args) {
+		System.out.println("[Hopefully this will get compiled :&]");
+	}
 	
 	public void run() throws Exception {
 		DevUtil.replacePrintStreams(this);
-		
-		try {
-			if(DEV_RECOMPILE) {
-				println("Recompiling script [ DEV_RECOMPILE = true ]");
-				DevUtil.recompileAllScriptFiles();
-			}
-		} catch(Exception e) {
-			e.printStackTrace();
-			return;
-		}
+		DevUtil.replaceGhidraBin(this);
 		
 		// Allow the user to close this script if it takes
 		// to long to execute
@@ -47,12 +48,30 @@ public class PrintScrapMechanicStructure extends GhidraScript {
 		// Load all lua functions
 		LuaUtil.init(this);
 		
+		// Initialize the cache
+		CacheUtil.init(DevUtil.classPath);
 		
 		
+		// Start the application
 		println("--------------------------------------------------------------------------");
 		
 		long start = System.currentTimeMillis();
-		ProgramStart.start();
+		
+		{
+			try {
+				ScrapMechanic.launch();
+			} catch(Exception e) {
+				e.printStackTrace();
+			} catch(Throwable e) {
+				// ThreadDeath
+				e.printStackTrace();
+			}
+			
+			String type_str = LuaUtil.getTypes().values().toString();
+			type_str = type_str.substring(1, type_str.length() - 1);
+			type_str = type_str.replace(", ", "\n  ");
+			System.out.println("LuaTypes:\n  " + type_str + "\n");
+		}
 		
 		long ellapsed = System.currentTimeMillis() - start;
 		println("Time ellapsed: " + ellapsed + " ms");

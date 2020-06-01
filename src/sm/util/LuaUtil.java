@@ -29,7 +29,6 @@ public final class LuaUtil {
 	}
 	
 	public static void init(GhidraScript ghidra) {
-		//SMFunctionSearch_1.tests = 400;
 		lua_functions.clear();
 		name_to_address.clear();
 		address_to_name.clear();
@@ -42,6 +41,8 @@ public final class LuaUtil {
 			new Type("boolean", 1),
 			new Type("lightuserdata", 2),
 			new Type("number", 3),
+				new Type("integer", 3),
+			
 			new Type("string", 4),
 			new Type("table", 5),
 			new Type("function", 6),

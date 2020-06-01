@@ -422,5 +422,6 @@
 			<attribute name="javadoc_location" value="jar:file:/C:\Users\Admin\Desktop\SSM\midnight\Avr-pwn\ghidra_9.1.2_PUBLIC\docs\GhidraAPI_javadoc.zip!/api/"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="res"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

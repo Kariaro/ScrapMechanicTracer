@@ -13,6 +13,7 @@ import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.listing.VariableStorage;
 import ghidra.program.model.pcode.HighFunction;
 import ghidra.program.model.pcode.HighVariable;
+import ghidra.program.model.pcode.PcodeOp;
 import ghidra.program.model.pcode.PcodeOpAST;
 import ghidra.program.model.pcode.Varnode;
 import ghidra.program.model.symbol.SourceType;
@@ -33,6 +34,7 @@ import static sm.complex.SMStructure.TRACE;
  * 
  * @author HardCoded
  */
+@Deprecated(forRemoval = true)
 public class FunctionExplorer implements Closeable {
 	private static final String CALL = "CALL";
 	
@@ -112,6 +114,8 @@ public class FunctionExplorer implements Closeable {
 			String mnemonic = inst.getMnemonicString();
 			
 			if(CALL.equals(mnemonic)) {
+				System.out.println(addr + ", " + inst);
+				
 				Iterator<PcodeOpAST> iter = set.getPcodeOps(addr);
 				if(!iter.hasNext()) continue;
 				
@@ -141,12 +145,14 @@ public class FunctionExplorer implements Closeable {
 						continue;
 					}
 					
-					for(int i = 1; i < ast.getNumInputs(); i++) {
-						Varnode arg = ast.getInput(i);
+					Varnode[] computed = computeValues(ast, set.getFunction().getParameters(), ast.getInputs());
+					
+					for(int i = 1; i < computed.length; i++) {
+						Varnode arg = computed[i];
 						Address aaa = arg.getAddress();
+						System.out.printf("    [%d]: %s\n", i, aaa);
 						if(aaa.isStackAddress()) {
 							// Check that the address points to Stack[0x4]
-							
 							if(aaa.getOffset() == 4) {
 								if(TRACE) {
 									System.out.println(addr + ", " + inst);
@@ -162,6 +168,29 @@ public class FunctionExplorer implements Closeable {
 							// break;
 						}
 					}
+					/*
+					for(int i = 1; i < ast.getNumInputs(); i++) {
+						Varnode arg = ast.getInput(i);
+						Address aaa = arg.getAddress();
+						System.out.printf("    [%d]: %s\n", i, aaa);
+						if(aaa.isStackAddress()) {
+							// Check that the address points to Stack[0x4]
+							if(aaa.getOffset() == 4) {
+								if(TRACE) {
+									System.out.println(addr + ", " + inst);
+									System.out.printf("        : Calling Function: %s\n", node, call_addr);
+									System.out.printf("        : [%d] %s   %d\n", i, arg, aaa.getOffset());
+									System.out.println();
+								}
+								
+								enterFunction(fuzzed, call_addr, object, getCallParams(ast.getInputs()));
+								break;
+							}
+							
+							// break;
+						}
+					}
+					*/
 				}
 			}
 		} while(inst != null);
@@ -286,6 +315,42 @@ public class FunctionExplorer implements Closeable {
 		Varnode[] result = new Varnode[command.getNumInputs()];
 		for(int i = 1; i < command.getNumInputs(); i++) {
 			Varnode input = command.getInput(i);
+			if(result[i] == null) result[i] = input;
+			
+			
+			PcodeOp op = input.getDef();
+			if(op != null) {
+				Varnode testNode = op.getInput(0);
+				Address addr = testNode.getAddress();
+				
+				if(addr.isStackAddress()) {
+					/*
+					System.out.println("        inp = " + input);
+					System.out.println("        op = " + op);
+					System.out.println("        node = " + testNode);
+					System.out.println("        addr = " + addr);
+					*/
+					
+					boolean found = false;
+					for(int j = 0; j < functionParams.length; j++) {
+						Parameter param = functionParams[j];
+						if(param.isStackVariable()) {
+							//System.out.println(j + ", param = " + param);
+							if(param.getStackOffset() == addr.getOffset()) {
+								if(j >= callParams.length) break;
+
+								//System.out.println("Found: " + result[i]);
+								result[i] = param.getVariableStorage().getFirstVarnode();
+								//System.out.println("    " + i + " -> " + result[i]);
+								found = true;
+								break;
+							}
+						}
+					}
+					
+					if(found) continue;
+				}
+			}
 			
 			if(input.isRegister()) {
 				HighVariable hv = input.getHigh();
@@ -325,8 +390,6 @@ public class FunctionExplorer implements Closeable {
 					}
 				}
 			}
-			
-			if(result[i] == null) result[i] = input;
 		}
 		
 		return result;

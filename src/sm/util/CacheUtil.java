@@ -10,13 +10,34 @@ import java.io.ObjectOutputStream;
 
 import sm.SMContainer;
 
+/**
+ * This file will write cached files to the disk to be read lated.
+ * 
+ * @author HardCoded
+ */
 public class CacheUtil {
-	private static final File CACHE_PATH = new File("C:\\Users\\Admin\\ghidra_scripts\\res\\cache\\");
+	private static File resourcePath;
+	private static File cachePath;
+	
+	public static final File getResourcePath() {
+		return resourcePath;
+	}
+	
+	public static final File getCachePath() {
+		return cachePath;
+	}
+	
+	public static void init(File path) {
+		resourcePath = new File(path, "res");
+		cachePath = new File(resourcePath, "cache");
+		
+		if(!cachePath.exists()) {
+			cachePath.mkdirs();
+		}
+	}
 	
 	public static SMContainer load(String name) {
-		if(!CACHE_PATH.exists()) CACHE_PATH.mkdirs();
-		
-		File path = new File(CACHE_PATH, name);
+		File path = new File(cachePath, name);
 		if(!path.getParentFile().exists()) path.getParentFile().mkdirs();
 		if(!path.exists()) return null;
 		
@@ -34,16 +55,12 @@ public class CacheUtil {
 	}
 	
 	public static boolean exists(String name) {
-		if(!CACHE_PATH.exists()) CACHE_PATH.mkdirs();
-		File file = new File(CACHE_PATH, name);
-		System.out.println("Exists: ??? " + file.getAbsolutePath());
+		File file = new File(cachePath, name);
 		return file.exists();
 	}
 	
 	public static boolean save(String name, SMContainer container) {
-		if(!CACHE_PATH.exists()) CACHE_PATH.mkdirs();
-		
-		try(ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream(new File(CACHE_PATH, name)))) {
+		try(ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream(new File(cachePath, name)))) {
 			stream.writeObject(container);
 			return true;
 		} catch(FileNotFoundException e) {

@@ -16,6 +16,7 @@ public class SMClassObject implements Serializable {
 	public List<SMFunctionObject> functions;
 	public List<SMConstantObject> constants;
 	public List<SMClassObject> classes;
+	
 	private String base;
 	private String path;
 	private String name;
@@ -140,7 +141,6 @@ public class SMClassObject implements Serializable {
 		return toString("");
 	}
 	
-	// TODO: Constants
 	protected String toString(String pad) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(pad);

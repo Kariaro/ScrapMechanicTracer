@@ -13,7 +13,6 @@ public class SMUtil {
 	private static final String CALL = "CALL";
 	
 	/* TODO: Check if this method has any errors
-	 * TODO: Check if there is any memory leaks anywere!
 	 */
 	public static SMObject loadSMObject(LuaReg ref) throws MemoryAccessException {
 		Function func = ref.getFunction();

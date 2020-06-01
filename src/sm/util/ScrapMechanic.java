@@ -1,122 +1,57 @@
 package sm.util;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Set;
 
+import sm.SMClassObject;
+import sm.SMContainer;
+import sm.SMFunctionObject;
 import sm.SMObject;
+import sm.complex.FunctionExplorer3;
 import sm.complex.SMStructure;
 
 public class ScrapMechanic {
-	public ScrapMechanic() {
+	private ScrapMechanic() {
 		
 	}
 	
-	public SMObjectBuilder createObjectBuilder() throws Exception {
-		return new SMObjectBuilder();
-	}
-	
-	/*public SMStructBuilder createBuilder() throws Exception {
-		/*if(false) {
-			SMFunction value = new SMFunction("checkLiftCollision", "006e6700", true);
-			value.load(parent);
+	public static final void launch() {
+		/*FunctionExplorer3 explorer = new FunctionExplorer3();
+		try {
+			// 006e2200
+			// Load_sm_render
+			//LuaReg reg = new LuaReg("00fe3e10", "Load_sm_gui_interface", "006df3a0");
+			LuaReg reg = new LuaReg("00fdc158", "Load_sm_localPlayer_006e1d00", "006e1d00");
+			SMObject smobj = SMUtil.loadSMObject(reg);
 			
-			System.out.println(value);
-			return null;
-		}
-		
-		return new SMStructBuilder();
-	}
-	
-	public SMStruct loadFromSMObjects(List<SMObject> objects) {
-		return new SMStruct("sm").load(objects);
-	}
-	
-	class SMStructBuilder {
-		private SMStruct sm;
-		
-		private SMStructBuilder() {
-			sm = new SMStruct("sm");
-		}
-		
-		public SMStructBuilder loadSM(String address) throws Exception {
+			SMContainer con = new SMContainer();
+			SMClassObject clazz = con.addClass("sm.render");
+			clazz.loadSettings(smobj);
+			clazz.loadConstants(smobj);
+			clazz.loadFunctions(smobj);
 			
-			// This will contain SMDataLink elements
-			// that has the structure
-			//   .. .. .. ..  addr  sm_namePointer
-			//   .. .. .. ..  addr  sm_funcPointer
-			SMDataStruct struct = new SMDataStruct(address);
-			sm.addPointerTable(struct);
 			
-			for(SMDataLink link : struct) {
-				// This class searches after the function pointers contained in the
-				// namespace
-				SMFunctionSearch_0 sm_object = new SMFunctionSearch_0(ghidra, link);
-				
-				for(SMDataLink entry : sm_object.getTabledata()) {
-					// 1: name
-					// 2: tabledata
-					//SMFunction function = sm.addFunction(link, entry, false);
-					//function.load();
-				}
-				
-				for(SMDataLink entry : sm_object.getUserdata()) {
-					// 1: userdata
-					// 2: object_identifiers
-					// 3: name
-					//SMFunction function = sm.addFunction(link, entry, true);
-					//function.load();
-				}
+			Set<SMFunctionObject> functions = con.getAllFunctions();
+			
+			for(SMFunctionObject obj : functions) {
+				System.out.printf("Exploring: %s\n", obj);
+				explorer.evaluate(obj);
 			}
 			
-			return SMStructBuilder.this;
-		}
-		
-		public SMStruct build() {
-			return sm;
-		}
-	}*/
-	
-	public class SMObjectBuilder {
-		private List<SMObject> list;
-		private SMObjectBuilder() {
-			list = new ArrayList<SMObject>();
-		}
-		
-		public SMObjectBuilder loadSM(String address) throws Exception {
-			LuaRegList array = new LuaRegList(address);
-			for(LuaReg ref : array) {
-				list.add(SMUtil.loadSMObject(ref));
+			for(SMFunctionObject obj : functions) {
+				if(obj.getFuzzedFunction() == null) continue;
+				System.out.println(obj);
 			}
-			return this;
+		} catch(Exception e) {
+			e.printStackTrace();
 		}
 		
-		public List<SMObject> build() {
-			return list;
-		}
-	}
-
-	public void test() {
+		explorer.close();
+		*/
+		
 		SMStructure structure = new SMStructure(false);
 		
 		System.out.println("Generated structure: " + structure);
 		structure.evaluate();
 		
-		/*
-		SMContainer container = null;//SMContainer.loadCache();
-		if(container == null) {
-			container = SMContainerBuilder.create()
-				.loadSM("00fe35d8") // server
-				.loadSM("00fe3dc8") // client
-				.loadSM("00ff9888") // both
-				.loadSM("00fe36a8") // storage [Server Only]
-				.calculate()
-				.runTests()
-				.build();
-			
-			SMContainer.saveCache(container);
-		}
-		
-		//System.out.println(container);
-		 */
 	}
 }

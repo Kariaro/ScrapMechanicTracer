@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Set;
 
 import ghidra.program.model.mem.MemoryAccessException;
-import sm.util.CacheUtil;
 import sm.util.LuaReg;
 import sm.util.LuaRegList;
 import sm.util.SMUtil;
@@ -15,11 +14,7 @@ import sm.util.SMUtil;
 public class SMContainer implements Serializable {
 	private static final long serialVersionUID = 3314121831232541563L;
 	protected static final transient String PADDING = "    ";
-	
 	protected List<SMClassObject> classes;
-	// TODO: Add SMClassObject sm and
-	// constants
-	protected String namespace = "sm";
 	
 	public SMContainer() {
 		classes = new ArrayList<SMClassObject>();
@@ -41,16 +36,7 @@ public class SMContainer implements Serializable {
 		return null;
 	}
 	
-	// TODO: This structure should not calculate anything other than the basic structure
-	
-	public static SMContainer loadCache() {
-		return CacheUtil.load("SMContainer.ser");
-	}
-	
-	public static void saveCache(SMContainer container) {
-		CacheUtil.save("SMContainer.ser", container);
-	}
-	
+	// TODO: Sort all the names!
 	public Set<SMFunctionObject> getAllFunctions() {
 		HashSet<SMFunctionObject> set = new HashSet<>();
 		for(SMClassObject clazz : classes) {
