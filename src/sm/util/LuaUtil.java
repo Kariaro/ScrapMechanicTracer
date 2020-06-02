@@ -271,9 +271,11 @@ public final class LuaUtil {
 		
 		public String getPrettyName() {
 			String last = name.substring(1);
+			// This is a little cheat for pretty print :D
 			if(name.equals("guiinterface")) return "GuiInterface";
 			if(name.equals("aistate")) return "AiState";
 			if(name.equals("pathnode")) return "PathNode";
+			if(name.equals("areatrigger")) return "AreaTrigger";
 			
 			return new StringBuilder().append(Character.toUpperCase(name.charAt(0))).append(last).toString();
 		}
