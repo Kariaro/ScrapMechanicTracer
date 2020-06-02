@@ -158,7 +158,7 @@ public class SMStructure {
 		if(container == null) return;
 		
 		String traceString = container.toString();
-		File traceFile = new File(CacheUtil.getResourcePath(), "trace.txt");
+		File traceFile = new File(CacheUtil.getResourcePath(), "trace_test.txt");
 		try(DataOutputStream stream = new DataOutputStream(new FileOutputStream(traceFile))) {
 			stream.write(traceString.getBytes());
 		} catch(IOException e) {
