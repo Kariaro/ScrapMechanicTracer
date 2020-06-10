@@ -8,6 +8,7 @@ import ghidra.app.script.GhidraScript;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressFactory;
 import ghidra.program.model.address.AddressSetView;
+import ghidra.program.model.data.DataTypeManager;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Program;
@@ -38,6 +39,10 @@ public class Util {
 	
 	public static Program getProgram() {
 		return SCRIPT.getCurrentProgram();
+	}
+	
+	public static DataTypeManager getDataTypeManager() {
+		return getProgram().getDataTypeManager();
 	}
 	
 	
@@ -146,6 +151,16 @@ public class Util {
 		Function result = SCRIPT.getFunctionAt(addr);
 		if(result == null) {
 			result = SCRIPT.createFunction(addr, "FUN_" + addr);
+			return result;
+		}
+		
+		return result;
+	}
+	
+	public static Function getFunctionAt(Address addr, boolean createNew, String name) {
+		Function result = SCRIPT.getFunctionAt(addr);
+		if(result == null && createNew) {
+			result = SCRIPT.createFunction(addr, name);
 			return result;
 		}
 		

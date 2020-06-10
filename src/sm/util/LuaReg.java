@@ -15,7 +15,6 @@ import ghidra.program.model.listing.Function;
  */
 public class LuaReg {
 	public final String base;
-	
 	public final String name;
 	public final String func;
 	

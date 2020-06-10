@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import ghidra.app.script.GhidraScript;
 import ghidra.program.model.address.Address;
@@ -11,30 +12,56 @@ import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.symbol.ExternalLocation;
-import ghidra.program.model.symbol.ExternalLocationIterator;
-import ghidra.program.model.symbol.ExternalManager;
+import ghidra.program.model.symbol.Symbol;
+import ghidra.program.model.symbol.SymbolIterator;
+import ghidra.program.model.symbol.SymbolTable;
 
+// TODO: Rework this class.. It's ugly
 public final class LuaUtil {
 	private static final String LIBRARY_NAME = "LUA51.DLL";
-	private static HashSet<String> lua_functions = new HashSet<>();
-	private static Map<String, Address> name_to_address = new HashMap<>();
-	private static Map<Address, String> address_to_name = new HashMap<>();
-	private static Map<String, Function> name_to_function = new HashMap<>();
-	private static Map<Address, Function> external_functions = new HashMap<>();
-	
 	
 	private static Map<String, Type> TYPES = new HashMap<>();
+	private static Map<String, String> addr_to_name;
+	private static Map<String, String> name_to_addr;
+	private static Set<String> functions;
 	
 	private LuaUtil() {
 	}
 	
-	public static void init(GhidraScript ghidra) {
-		lua_functions.clear();
-		name_to_address.clear();
-		address_to_name.clear();
-		external_functions.clear();
-		name_to_function.clear();
+	public static void init2(GhidraScript ghidra) {
+		Program program = ghidra.getCurrentProgram();
+		SymbolTable table = program.getSymbolTable();
 		
+		// TODO: Check if it finds the library!
+		Symbol library = table.getLibrarySymbol(LIBRARY_NAME);
+		
+		addr_to_name = new HashMap<>();
+		name_to_addr = new HashMap<>();
+		functions = new HashSet<>();
+		
+		SymbolIterator iterator = table.getChildren(library);
+		while(iterator.hasNext()) {
+			Symbol symbol = iterator.next();
+			Object object = symbol.getObject();
+			
+			if(object instanceof Function) {
+				Function function = (Function)object;
+				ExternalLocation external = function.getExternalLocation();
+				
+				Function func = (Function)object;
+				//System.out.println("    name = " + func.getName());
+				//System.out.println("    external = " + external.getAddress());
+				
+				String addr = external.getAddress().toString();
+				String name = func.getName();
+				addr_to_name.put(addr, name);
+				name_to_addr.put(name, addr);
+				functions.add(name);
+			}
+		}
+	}
+	
+	public static void init(GhidraScript ghidra) {
 		Type[] lua_default = {
 			new Type("none", -1),
 			new Type("nil", 0),
@@ -54,166 +81,38 @@ public final class LuaUtil {
 			TYPES.put(type.name, type);
 		}
 		
-		Program program = ghidra.getCurrentProgram();
-		ExternalManager externalManager = program.getExternalManager();
-		//Library library = externalManager.getExternalLibrary(LIBRARY_NAME);
-		//System.out.println("FoundLibrary: " + library);
-		//SymbolTable table = program.getSymbolTable();
-		//System.out.println("Library: tble = " + table);
-		//SymbolIterator symbolIterator = table.getChildren(library.getSymbol());
-		//System.out.println("Library: syit = " + symbolIterator);
-		
-		{
-			ExternalLocationIterator iterator = externalManager.getExternalLocations(LIBRARY_NAME);
-			do {
-				ExternalLocation location = iterator.next();
-				//System.out.println("    location = " + location);
-				
-				if(location.isFunction()) {
-					Function function = location.getFunction();
-					//System.out.println("        function = " + function);
-					//System.out.println("        callspec = " + function.getCallingConventionName());
-					//System.out.println("        parameters = " + function.getParameterCount());
-					/*Parameter[] parameters = function.getParameters();
-					for(int i = 0; i < parameters.length; i++) {
-						System.out.println("            " + i + ": " + parameters[i]);
-					}*/
-					
-					String name = function.getName(false);
-					Address address = location.getAddress();
-					//System.out.println("        location = " + address);
-					//System.out.println("        location = " + function.getExternalLocation().getAddress());
-					
-					name_to_address.put(name, address);
-					address_to_name.put(address, name);
-					lua_functions.add(name);
-					name_to_function.put(name, function);
-				}
-				//System.out.println();
-			} while(iterator.hasNext());
-		}
-		
-		
-		// TODO: Try fix this
-		/*
-		{
-			ProjectData projectData = ghidra.getState().getProject().getProjectData();
-			DomainFile file = projectData.getFile(library.getAssociatedProgramPath());
-			
-			Program libraryProgram = null;
-			try {
-				libraryProgram = (Program)file.getImmutableDomainObject(
-					ghidra,
-					DomainFile.DEFAULT_VERSION,
-					ghidra.getMonitor()
-				);
-			} catch (VersionException e) {
-				Util.printStackTrace(e);
-			} catch(CancelledException e) {
-				Util.printStackTrace(e);
-			} catch(IOException e) {
-				Util.printStackTrace(e);
-			}
-			
-			FunctionManager functionManager = libraryProgram.getFunctionManager();
-			FunctionIterator functionIterator = functionManager.getFunctions(true);
-			
-			do {
-				Function function = functionIterator.next();
-				
-				String name = function.getName(false);
-				if(lua_functions.contains(name)) {
-					Function current = name_to_function.get(name);
-					
-					FunctionReturnTypeFieldLocation loc_0 = (FunctionReturnTypeFieldLocation)current.getSymbol().getProgramLocation();
-					FunctionReturnTypeFieldLocation loc_1 = (FunctionReturnTypeFieldLocation)function.getSymbol().getProgramLocation();
-					
-					// TODO: Find a better solution
-					if(!loc_0.getSignature().equals(loc_1.getSignature())) {
-						//System.out.println("  current = " + loc_0.getSignature());
-						//System.out.println("  target  = " + loc_1.getSignature());
-						
-						try {
-							current.updateFunction(
-								function.getCallingConventionName(),
-								function.getReturn(),
-								FunctionUpdateType.DYNAMIC_STORAGE_FORMAL_PARAMS,
-								false,
-								SourceType.ANALYSIS,
-								function.getParameters()
-							);
-							current.setVarArgs(function.hasVarArgs());
-						} catch(DuplicateNameException e) {
-							Util.printStackTrace(e);
-						} catch(InvalidInputException e) {
-							Util.printStackTrace(e);
-						}
-					}
-					
-				}
-			} while(functionIterator.hasNext());
-		}
-		*/
-	}
-	
-	public static boolean isLuaFunction(String name) {
-		if(name.startsWith(LIBRARY_NAME)) {
-			return lua_functions.contains(name.substring(LIBRARY_NAME.length() + 2));
-		}
-		return lua_functions.contains(name);
+		init2(ghidra);
 	}
 	
 	public static Map<String, Type> getTypes() {
 		return TYPES;
 	}
 	
-	public static Address getExternalAddressFromName(String name) {
-		return name_to_address.getOrDefault(name, null);
+	public static boolean isLuaFunction(String name) {
+		if(name.startsWith(LIBRARY_NAME)) {
+			return functions.contains(name.substring(LIBRARY_NAME.length() + 2));
+		}
+		return functions.contains(name);
 	}
 	
-	public static String getNameFromExternalAddress(Address address) {
-		return address_to_name.getOrDefault(address, null);
+	public static String getName(Address address) {
+		return addr_to_name.get(address.toString());
 	}
 	
-	public static String getNameFromPointerAddress(Address address) {
+	public static String getNameFromPointer(Address address) {
 		Address addr = Util.getAddressPointer(address);
 		if(addr == null) return null;
-		return address_to_name.getOrDefault(addr, null);
+		return addr_to_name.get(addr.toString());
 	}
 	
-	
-	public static boolean isLuaFunctionPointer(Address address) {
+	public static boolean isLuaPointer(Address address) {
 		Address addr = Util.getAddressPointer(address);
-		boolean check = address_to_name.containsKey(addr);
-		/*if(check) {
-			// Try fix the method if it's not already done
-			Function external = external_functions.getOrDefault(addr, null);
-			if(external != null) {
-				Function current = Util.getScript().getFunctionAt(address);
-				
-				System.out.println("func = " + current);
-				System.out.println("addr = " + address);
-				try {
-					current.updateFunction(
-						external.getCallingConventionName(),
-						external.getReturn(),
-						FunctionUpdateType.CUSTOM_STORAGE,
-						false,
-						SourceType.ANALYSIS,
-						external.getParameters()
-					);
-				} catch(DuplicateNameException e) {
-					Util.printStackTrace(e);
-				} catch(InvalidInputException e) {
-					Util.printStackTrace(e);
-				}
-				
-				//current.addParameter(Variable.class, source)
-			}
-		}*/
+		if(addr == null) return false;
 		
-		return check;
+		return addr_to_name.containsKey(addr.toString());
 	}
+	
+	
 	
 	public static void addType(String name, int id) {
 		String type_name = name.toLowerCase();

@@ -5,6 +5,8 @@
 // @toolbar 
 
 import ghidra.app.script.GhidraScript;
+import sm.importer.Importer;
+import sm.importer.PointerFinder;
 import sm.util.CacheUtil;
 import sm.util.LuaUtil;
 import sm.util.ScrapMechanic;
@@ -28,12 +30,17 @@ public class ScrapMechanicTracer extends GhidraScript {
 		// Initialize the util
 		Util.init(this);
 		
+		// Initialize all imports
+		Importer.init(this);
+		
 		// Load all lua functions
 		LuaUtil.init(this);
 		
+		// Find all the structure pointers
+		PointerFinder.init(this);
+		
 		// Initialize the cache
 		CacheUtil.init(DevUtil.classPath);
-		
 		
 		// Start the application
 		println("--------------------------------------------------------------------------");

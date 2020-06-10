@@ -11,11 +11,13 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.apache.commons.collections4.FunctorException;
 
+import ghidra.program.model.address.Address;
 import ghidra.util.task.CancelledListener;
 import ghidra.util.task.TaskDialog;
 import sm.SMContainer;
 import sm.SMContainerBuilder;
 import sm.SMFunctionObject;
+import sm.importer.PointerFinder;
 import sm.util.CacheUtil;
 import sm.util.Util;
 
@@ -28,19 +30,26 @@ public class SMStructure {
 	private SMContainer container;
 	
 	public SMStructure(boolean load) {
-		if(CacheUtil.exists("SMContainerEvaluated.ser")) {
-			//SMContainer container = CacheUtil.load("SMContainerEvaluated.ser");
+		if(CacheUtil.exists("SMContainerEvaluated_test.ser")) {
+			//SMContainer container = CacheUtil.load("SMContainerEvaluated_test.ser");
 			//printTrace(container);
 			
 			//return;
 		}
 		
 		if(load) {
-			container = CacheUtil.load("SMContainer.ser");
+			container = CacheUtil.load("SMContainer_test.ser");
 		}
 		
 		if(container == null) {
-			container = SMContainerBuilder.create()
+			SMContainerBuilder builder = SMContainerBuilder.create();
+			
+			Set<Address> pointers = PointerFinder.getStructures();
+			for(Address pointer : pointers) {
+				builder.loadSM(pointer.toString());
+			}
+			
+			/*container = SMContainerBuilder.create()
 				.loadSM("00fe35d8") // server
 				.loadSM("00fe3dc8") // client
 				.loadSM("00ff9888") // both
@@ -48,8 +57,11 @@ public class SMStructure {
 				.loadSM("010103c8") // terrainTile
 				.calculate()
 				.build();
+			*/
 			
-			CacheUtil.save("SMContainer.ser", container);
+			container = builder.calculate().build();
+			
+			CacheUtil.save("SMContainer_test.ser", container);
 		}
 		
 	}
@@ -74,6 +86,7 @@ public class SMStructure {
 		if(container == null) return;
 		if(evaluating) throw new IllegalAccessError("Is already running!");
 		evaluating = true;
+		
 		final int NUM_THREADS = 14;
 		Set<SMFunctionObject> functions = container.getAllFunctions();
 		final ConcurrentLinkedQueue<SMFunctionObject> queue = new ConcurrentLinkedQueue<SMFunctionObject>(functions);
@@ -101,7 +114,7 @@ public class SMStructure {
 		for(int i = 0; i < NUM_THREADS; i++) {
 			final int id = i;
 			Thread thread = new Thread(group, () -> {
-				FunctionExplorer3 explorer = new FunctionExplorer3();
+				FunctionExplorer explorer = new FunctionExplorer();
 				
 				try {
 					while(!queue.isEmpty()) {
@@ -150,7 +163,7 @@ public class SMStructure {
 			System.out.println(function);
 		}
 		
-		CacheUtil.save("SMContainerEvaluated.ser", container);
+		CacheUtil.save("SMContainerEvaluated_test.ser", container);
 		printTrace(container);
 	}
 	
