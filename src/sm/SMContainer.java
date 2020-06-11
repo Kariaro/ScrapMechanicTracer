@@ -11,9 +11,11 @@ import sm.util.LuaReg;
 import sm.util.LuaRegList;
 import sm.util.SMUtil;
 
+// TODO: Fix all the add commands to look nicer.
 public class SMContainer implements Serializable {
 	private static final long serialVersionUID = 3314121831232541563L;
-	protected static final transient String PADDING = "    ";
+	private static final transient String PADDING = "    ";
+	
 	protected List<SMClassObject> classes;
 	
 	public SMContainer() {
@@ -36,7 +38,6 @@ public class SMContainer implements Serializable {
 		return null;
 	}
 	
-	// TODO: Sort all the names!
 	public Set<SMFunctionObject> getAllFunctions() {
 		HashSet<SMFunctionObject> set = new HashSet<>();
 		for(SMClassObject clazz : classes) {
@@ -85,7 +86,7 @@ public class SMContainer implements Serializable {
 		
 		sb.append("\"sm\": {\n");
 		for(int i = 0; i < classes.size(); i++) {
-			String value = classes.get(i).toString(PADDING);
+			String value = classes.get(i).toString("\t");
 			sb.append(value);
 			
 			if(i != classes.size() - 1) {
@@ -96,6 +97,6 @@ public class SMContainer implements Serializable {
 		}
 		sb.append("}");
 		
-		return sb.toString();
+		return sb.toString().replace("\t", PADDING);
 	}
 }

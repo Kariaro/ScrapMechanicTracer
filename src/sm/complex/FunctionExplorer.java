@@ -7,9 +7,13 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import ghidra.app.cmd.disassemble.DisassembleCommand;
 import ghidra.app.decompiler.DecompInterface;
 import ghidra.app.decompiler.DecompileResults;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.address.AddressRange;
+import ghidra.program.model.address.AddressSet;
+import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
@@ -29,8 +33,7 @@ import sm.util.Util;
  * This class will search throuh a decompiled function and try guess the 
  * structure of how it is made.
  * 
- * This is structure is really compilcated and is not easy to find.
- * 
+ * This is structure is really complicated and is not easy to find.
  * 
  * @author HardCoded
  */
@@ -41,14 +44,16 @@ public class FunctionExplorer implements Closeable {
 	
 	private boolean isClosed;
 	
-	private final DataType LUA_STATE_PTR;
+	private final DataType LUA_STATE_PTR_DATATYPE;
+	private final DataType INT_DATATYPE;
 	private DecompInterface decomp;
 	public FunctionExplorer() {
 		decomp = new DecompInterface();
 		decomp.toggleCCode(false);
 		decomp.openProgram(Util.getScript().getCurrentProgram());
 		
-		LUA_STATE_PTR = Util.getDataTypeManager().getDataType("/lua.h/lua_State *");
+		LUA_STATE_PTR_DATATYPE = Util.getDataTypeManager().getDataType("/lua.h/lua_State *");
+		INT_DATATYPE = Util.getDataTypeManager().getDataType("/int");
 	}
 	
 	public FuzzedFunction evaluate(SMFunctionObject object) {
@@ -67,12 +72,23 @@ public class FunctionExplorer implements Closeable {
 				// Because this is the first function in the evaluation tree
 				// this parameter should be a lua_State*
 				Parameter param = params[0];
+				if(function.getCallingConventionName().equals("__thiscall")) {
+					param = params[1];
+				}
 				
 				varnode[0] = param.getFirstStorageVarnode();
 				
-				if(!param.getDataType().equals(LUA_STATE_PTR)) {
+				if(!function.getReturnType().isEquivalent(INT_DATATYPE)) {
 					try {
-						param.setDataType(LUA_STATE_PTR, SourceType.ANALYSIS);
+						function.setReturnType(INT_DATATYPE, SourceType.ANALYSIS);
+					} catch(InvalidInputException e) {
+						e.printStackTrace();
+					}
+				}
+				
+				if(!param.getDataType().equals(LUA_STATE_PTR_DATATYPE)) {
+					try {
+						param.setDataType(LUA_STATE_PTR_DATATYPE, SourceType.ANALYSIS);
 					} catch(InvalidInputException e) {
 						e.printStackTrace();
 					}
@@ -88,8 +104,15 @@ public class FunctionExplorer implements Closeable {
 	
 	private void enterFunction(FuzzedFunction fuzzed, Address callAddress, int depth, Varnode[] params) {
 		if(Util.isMonitorCancelled()) return;
-		
+
 		Function function = Util.getFunctionAt(callAddress);
+		
+		// TODO: Find a better way of checking if a function is deassembled!
+		if(Util.getInstructionAt(callAddress) == null || true) {
+			DisassembleCommand command = new DisassembleCommand(callAddress, null, true);
+			command.applyTo(Util.getProgram(), Util.getMonitor());
+		}
+		
 		if(function == null) return;
 		
 		DecompileResults result = decomp.decompileFunction(function, SMStructure.DECOMPILE_TIMEOUT, null);
@@ -114,6 +137,7 @@ public class FunctionExplorer implements Closeable {
 	
 	private void traverseFunction(FuzzedFunction fuzzed, HighFunction local, int depth, Varnode[] params) {
 		List<Instruction> instructions = getCallInstructions(local);
+		System.out.println("Insts: " + instructions);
 		
 		for(int instIndex = 0; instIndex < instructions.size(); instIndex++) {
 			Instruction inst = instructions.get(instIndex);
@@ -187,17 +211,16 @@ public class FunctionExplorer implements Closeable {
 						//
 						Function nextFunction = Util.getFunctionAt(callAddress);
 						
-						// TODO: This is really unexpected
+						// NOTE: This is really unexpected
 						if(nextFunction == null) break;
 						
 						Parameter[] nextFunctionParams = nextFunction.getParameters();
 						if(nextFunctionParams.length > i) {
 							Parameter param = nextFunctionParams[i];
 							
-							// TODO: This has a tendency to fail....
-							if(!param.getDataType().equals(LUA_STATE_PTR)) {
+							if(!param.getDataType().equals(LUA_STATE_PTR_DATATYPE)) {
 								try {
-									param.setDataType(LUA_STATE_PTR, SourceType.ANALYSIS);
+									param.setDataType(LUA_STATE_PTR_DATATYPE, SourceType.ANALYSIS);
 								} catch(InvalidInputException e) {
 									e.printStackTrace();
 								}
@@ -207,7 +230,6 @@ public class FunctionExplorer implements Closeable {
 				}
 				
 				if(traverse) {
-					// TODO: Only values that are known should be passed as parameters
 					// TODO: Sometimes arguments are pushed into registers before being pushed to a
 					//       call command. The task is to check if any of these registers point to
 					//       the current functions parameters. And if so change that value into the
@@ -316,10 +338,38 @@ public class FunctionExplorer implements Closeable {
 	 */
 	private List<Instruction> getCallInstructions(HighFunction set) {
 		List<Instruction> list = new ArrayList<Instruction>();
+		
+		// TODO: Sometimes this size is zero...
+		AddressSetView view = set.getFunction().getBody();
+		Iterator<AddressRange> memory = view.iterator();
+		System.out.println("View: " + view);
+		
+		while(memory.hasNext()) {
+			AddressRange range = memory.next();
+			System.out.println("Range: " + range);
+			
+			Instruction inst = Util.getInstructionAt(range.getMinAddress());
+			
+			while(inst != null) {
+				if(!range.contains(inst.getAddress())) break;
+				
+				System.out.printf("%s, %s\n", inst.getAddress(), inst);
+				
+				if(CALL.equals(inst.getMnemonicString())) {
+					list.add(inst);
+				}
+				
+				inst = inst.getNext();
+			}
+		}
+		
+		/*
 		Instruction inst = Util.getInstructionBefore(set);
 		
 		while(inst != null) {
 			if(!Util.isInside(inst, set)) break;
+			
+			System.out.printf("%s, %s\n", inst.getAddress(), inst);
 			
 			if(CALL.equals(inst.getMnemonicString())) {
 				list.add(inst);
@@ -327,6 +377,7 @@ public class FunctionExplorer implements Closeable {
 			
 			inst = inst.getNext();
 		}
+		*/
 		
 		return list;
 	}
@@ -379,6 +430,7 @@ public class FunctionExplorer implements Closeable {
 		return false;
 	}
 	
+	// TODO: Failes to find argument length sometimes.
 	private boolean checkLuaError(FuzzedFunction fuzzed, PcodeOpAST command, Varnode[] newParams) {
 		if(command.getNumInputs() < 4) return false;
 		
@@ -395,11 +447,11 @@ public class FunctionExplorer implements Closeable {
 		
 		for(int i = 2; i < 4; i++) {
 			Varnode input = command.getInput(i);
-			//System.out.printf("        [%d]: %s\n", i, input);
+			System.out.printf("        [%d]: %s\n", i, input);
 			if(input == null) continue;
 			
 			HighVariable hv = input.getHigh();
-			//System.out.printf("          high: %s\n", hv.getName());
+			System.out.printf("          high: %s\n", hv.getName());
 			
 			int count = 0;
 			Varnode[] mem = hv.getInstances();
@@ -408,8 +460,9 @@ public class FunctionExplorer implements Closeable {
 				PcodeOp op = m.getDef();
 				if(op == null) continue;
 				
+				System.out.printf("              [%d]: %s    %s\n", j, op, op.getInput(0).getDef());
+				
 				if(COPY.equals(op.getMnemonic())) {
-					//System.out.printf("              [%d]: %s\n", j, op);
 					msgCount[(i - 2) * 2 + (count++)] = op;
 					if(count > 1) break;
 				}
@@ -420,15 +473,19 @@ public class FunctionExplorer implements Closeable {
 		
 		for(int i = 0; i < 4; i++) {
 			if(msgCount[i] == null) return false;
-			//System.out.printf("        [%d]: %s\n", i, msgCount[i]);
+			System.out.printf("        [%d]: %s\n", i, msgCount[i]);
 		}
 		
 		// Read message
 		for(int i = 0; i < 2; i++) {
+			System.out.printf("        [%d]: %s\n", i, msgCount[i].getInput(0).getOffset());
 			String str = Util.readTerminatedString(Util.getAddressFromLong(msgCount[i].getInput(0).getOffset()));
 			if(str == null) return false;
+			System.out.printf("        [%d]: str = %s\n", i, str);
 			
 			int args = Util.toSignedInt(msgCount[i + 2].getInput(0).getOffset());
+			
+			System.out.printf("        [%d]: args = %s\n", i, args);
 			if(str.startsWith("Expected %d arguments")) {
 				fuzzed.minimumArguments = args;
 				fuzzed.maximumArguments = args;
@@ -501,7 +558,7 @@ public class FunctionExplorer implements Closeable {
 				
 				break;
 			}
-			// TODO: Sometimes this gives false values
+			// TODO: Sometimes this gives false values ???????? What does this mean?
 			case "luaL_checklstring": {
 				if(nextParams.length < 2) break;
 				long index = nextParams[1].getOffset();
@@ -532,11 +589,11 @@ public class FunctionExplorer implements Closeable {
 			case "lua_type": return;
 			
 			case "lua_getfield": return;
-			case "lua_isnumber": return; // TODO: ???? 
-			case "lua_getmetatable": return; // TODO: Sometimes this is used to create sub tables for returns and other stuff.
+			case "lua_isnumber": return; // NOTE: Should we use this to get additional number variables?
+			case "lua_getmetatable": return; // NOTE: Sometimes this is used to create sub tables for returns and other stuff.
 			case "lua_typename": return;
 			case "lua_topointer": return;
-			case "lua_gettop": return; // TODO: This function gets the amount of arguments on the stack
+			case "lua_gettop": return; // NOTE: This function gets the amount of arguments on the stack
 			
 			default: {
 				// Do nothing

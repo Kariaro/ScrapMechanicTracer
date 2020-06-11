@@ -16,7 +16,7 @@ import ghidra.program.model.symbol.Symbol;
 import ghidra.program.model.symbol.SymbolIterator;
 import ghidra.program.model.symbol.SymbolTable;
 
-// TODO: Rework this class.. It's ugly
+// NOTE: Rework this class.. It's ugly
 public final class LuaUtil {
 	private static final String LIBRARY_NAME = "LUA51.DLL";
 	
@@ -28,12 +28,34 @@ public final class LuaUtil {
 	private LuaUtil() {
 	}
 	
-	public static void init2(GhidraScript ghidra) {
+	public static void init(GhidraScript ghidra) throws Exception {
 		Program program = ghidra.getCurrentProgram();
 		SymbolTable table = program.getSymbolTable();
 		
-		// TODO: Check if it finds the library!
 		Symbol library = table.getLibrarySymbol(LIBRARY_NAME);
+		if(library == null) {
+			throw new Exception("Failed to find the library '" + LIBRARY_NAME + "'");
+		}
+		
+		// TODO: Can we initialize the default lua types in another way?
+		Type[] lua_default = {
+			new Type("none", -1),
+			new Type("nil", 0),
+			new Type("boolean", 1),
+			new Type("lightuserdata", 2),
+			new Type("number", 3),
+				new Type("integer", 3),
+			
+			new Type("string", 4),
+			new Type("table", 5),
+			new Type("function", 6),
+			new Type("userdata", 7),
+			new Type("thread", 8)
+		};
+		
+		for(Type type : lua_default) {
+			TYPES.put(type.name, type);
+		}
 		
 		addr_to_name = new HashMap<>();
 		name_to_addr = new HashMap<>();
@@ -59,29 +81,6 @@ public final class LuaUtil {
 				functions.add(name);
 			}
 		}
-	}
-	
-	public static void init(GhidraScript ghidra) {
-		Type[] lua_default = {
-			new Type("none", -1),
-			new Type("nil", 0),
-			new Type("boolean", 1),
-			new Type("lightuserdata", 2),
-			new Type("number", 3),
-				new Type("integer", 3),
-			
-			new Type("string", 4),
-			new Type("table", 5),
-			new Type("function", 6),
-			new Type("userdata", 7),
-			new Type("thread", 8)
-		};
-		
-		for(Type type : lua_default) {
-			TYPES.put(type.name, type);
-		}
-		
-		init2(ghidra);
 	}
 	
 	public static Map<String, Type> getTypes() {
@@ -170,7 +169,7 @@ public final class LuaUtil {
 		
 		public String getPrettyName() {
 			String last = name.substring(1);
-			// This is a little cheat for pretty print :D
+			// This is a little cheat for pretty print.
 			if(name.equals("guiinterface")) return "GuiInterface";
 			if(name.equals("aistate")) return "AiState";
 			if(name.equals("pathnode")) return "PathNode";

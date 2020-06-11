@@ -9,8 +9,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import org.apache.commons.collections4.FunctorException;
-
 import ghidra.program.model.address.Address;
 import ghidra.util.task.CancelledListener;
 import ghidra.util.task.TaskDialog;
@@ -21,9 +19,10 @@ import sm.importer.PointerFinder;
 import sm.util.CacheUtil;
 import sm.util.Util;
 
+
 public class SMStructure {
-	public static final boolean SHOW_ADDRESS = false;
-	public static final boolean TRACE = false;
+	public static final boolean SHOW_ADDRESS = true;
+	public static final boolean TRACE = true;
 	
 	public static final int DECOMPILE_TIMEOUT = 10;
 	
@@ -63,26 +62,17 @@ public class SMStructure {
 			
 			CacheUtil.save("SMContainer_test.ser", container);
 		}
-		
-	}
-	
-	/**
-	 * This container is just a empty structure that needs to be evaluated by
-	 * a {@link FunctorException} before it is usable.
-	 * 
-	 * @return SMContainer
-	 */
-	public SMContainer getContainer() {
-		return container;
 	}
 	
 	private boolean evaluating;
 	
 	/**
-	 * This function uses a {@link ConcurrentLinkedQueue} to distribute the functions
-	 * to decompile equally over multiple threads.
+	 * This function uses a {@link ConcurrentLinkedQueue} to distribute decompile
+	 * calls  over multiple threads.
 	 */
 	public synchronized void evaluate() {
+		//if(true) return;
+		
 		if(container == null) return;
 		if(evaluating) throw new IllegalAccessError("Is already running!");
 		evaluating = true;
@@ -122,7 +112,10 @@ public class SMStructure {
 						
 						SMFunctionObject obj = queue.poll();
 						if(obj == null) break;
-						
+						//if(!obj.getName().equals("getRaycast")) continue;
+						//if(!obj.getName().equals("play")) continue;
+						//if(!obj.getName().equals("getPistons")) continue;
+						if(!obj.getName().equals("createCharacter")) continue;
 						System.out.printf("[Worker ID#%d]: Exploring: %s\n", id, obj);
 						explorer.evaluate(obj);
 						monitor.incrementProgress(1);

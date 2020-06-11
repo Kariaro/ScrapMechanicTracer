@@ -22,7 +22,10 @@ import ghidra.program.model.symbol.SymbolTable;
 import sm.util.Util;
 
 /**
- * This class checks if all functions
+ * This class imports the function signatures for each lua command.
+ * It also imports some important datatypes.
+ * 
+ * lua_State, luaCFunction, lua_Integer, lua_Number, luaL_Reg
  * 
  * @author HardCoded
  */
@@ -40,7 +43,7 @@ public class Importer {
 		"typedef int lua_Integer;";
 	
 	public static final String LUA_NUMBER =
-		"typedef float lua_Number;";
+		"typedef double lua_Number;";
 	
 	public static final String LUAL_REG =
 		"typedef struct luaL_Reg {\n" +
@@ -56,7 +59,7 @@ public class Importer {
 		{ "luaL_Reg", LUAL_REG },
 		
 		
-		// Without these some functions will not get parsed by the CParser
+		// Without this datatype, some functions will not get parsed by the CParser
 		{ "size_t", "typedef unsigned int size_t;" }
 	};
 	
@@ -102,7 +105,7 @@ public class Importer {
 	}
 	
 	private static final String[][] SIGNATURES = {
-		// TODO: This was creating a java.lang.StackOverflowError exception because a DataType was not found. (Probably)
+		// NOTE: This was creating a java.lang.StackOverflowError exception because a DataType was not found. (Probably)
 		// 	     Original signature "lua_CFunction* lua_atpanic (lua_State* L, lua_CFunction* panicf);"
 		{ "lua_atpanic",			"void* lua_atpanic (lua_State* L, lua_CFunction* panicf);" },
 		
@@ -181,8 +184,10 @@ public class Importer {
 		Program program = ghidra.getCurrentProgram();
 		SymbolTable table = program.getSymbolTable();
 		
-		// TODO: Check if it finds the library!
 		Symbol library = table.getLibrarySymbol(LIBRARY_NAME);
+		if(library == null) {
+			throw new Exception("Failed to find the library '" + LIBRARY_NAME + "'");
+		}
 		
 		SymbolIterator iterator = table.getChildren(library);
 		while(iterator.hasNext()) {
@@ -195,8 +200,6 @@ public class Importer {
 			}
 			
 			CParser parser = new CParser(manager);
-			
-			// TODO: This should always be castable unless errors. Check for errors.
 			FunctionSignature signature = (FunctionSignature)parser.parse(data[1]);
 			boolean shouldUpdate = isDifferent(symbol, signature);
 			

@@ -1,10 +1,11 @@
 # ScrapMechanicTracer
-This is a script for ghidra and it will print the lua function arguments and structure of ScrapMechanic.
 
-This code is a project and is aimed to be able to print the lua functions by just adding the executable of ScrapMechanic to ghidra and to run this script.
+This script was made for ghidra.....
 
-This code is designed to find all the lua functions and printing them in a readable format.
 
+This script will scan ScrapMechanic and return a file that lists all the function arguments and call locations..
+
+The idea of this script is to make it easier for modders to create new mods for ScrapMechanic.
 This should work on any version of Scrap Mechanic.
 
 
@@ -14,6 +15,7 @@ This should work on any version of Scrap Mechanic.
 ### Installing
 
 > This is how you do bla. bla. bla
+> ...
 
 
 

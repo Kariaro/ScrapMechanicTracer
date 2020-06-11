@@ -12,6 +12,7 @@ public class SMFunctionObject implements Serializable {
 	
 	private String functionAddress;
 	private String name;
+	
 	private boolean local;
 	
 	
@@ -22,12 +23,9 @@ public class SMFunctionObject implements Serializable {
 	private FuzzedFunction fuzzed;
 	
 	public SMFunctionObject(LuaReg reg, boolean local) {
-		//baseAddress = ref.base;
-		functionAddress = reg.func;
-		name = reg.name;
+		this.functionAddress = reg.func;
+		this.name = reg.name;
 		this.local = local;
-		
-		//name = Util.readTerminatedString(Util.getAddress(ref.name));
 	}
 	
 	public String getName() {
@@ -52,6 +50,10 @@ public class SMFunctionObject implements Serializable {
 		this.fuzzed = fuzzed;
 	}
 	
+	// TODO: Show more information about what errors this function has
+	//       'Sandbox Violation' client/server
+	//       ...
+	//
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();

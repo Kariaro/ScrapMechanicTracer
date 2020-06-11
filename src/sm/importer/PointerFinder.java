@@ -19,26 +19,30 @@ import sm.util.Util;
  * @author HardCoded
  */
 public class PointerFinder {
+	// TODO: Make the user be able to edit these...
+	private static final String STRINGS_MEMORY_BLOCK = ".rdata";
+	private static final String REFERENCES_MEMORY_BLOCK = ".data";
+	
 	private static final String NAME_PATTERN = "[a-zA-Z0-9.]+";
 	private static final int MAX_STRUCTURE_SIZE = 256;
 	private static Set<Address> STRUCTURES;
 	
 	public static void init(GhidraScript ghidra) throws Exception {
 		List<StringPointer> list = new ArrayList<>();
-		findStrings(".rdata", list);
+		findStrings(STRINGS_MEMORY_BLOCK, list);
 		
 		List<StringPointer> groupList = new ArrayList<>();
-		findReferences(".data", list, groupList);
+		findReferences(REFERENCES_MEMORY_BLOCK, list, groupList);
 		
 		STRUCTURES = new HashSet<>();
 		findStructures(groupList, list, STRUCTURES);
 		
-		System.out.println("Length: " + list.size());
-		System.out.println();
-		
+		System.out.println("Structures:");
 		for(Address structure : STRUCTURES) {
-			System.out.println("addr = " + structure);
+			System.out.println("  pointer = " + structure);
 		}
+		
+		System.out.println();
 	}
 	
 	public static Set<Address> getStructures() {

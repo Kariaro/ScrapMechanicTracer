@@ -87,7 +87,7 @@ public class SMClassObject implements Serializable {
 		return set;
 	}
 	
-	// TODO: This can give false positives
+	// FIXME: This can give false positives
 	public boolean hasPath(String path) {
 		String thisPath = name.substring(name.lastIndexOf('.') + 1);
 		if(path.indexOf('.') < 0) {
@@ -141,16 +141,16 @@ public class SMClassObject implements Serializable {
 		return toString("");
 	}
 	
-	protected String toString(String pad) {
+	protected String toString(String padding) {
 		StringBuilder sb = new StringBuilder();
-		sb.append(pad);
+		sb.append(padding);
 		if(SMStructure.SHOW_ADDRESS) sb.append(base).append(" -> ");
 		sb.append("\"").append(name).append("\": {\n");
 		
 		int totalValues = constants.size() + classes.size() + functions.size();
 		
 		for(int i = 0; i < classes.size(); i++) {
-			String value = classes.get(i).toString(pad + SMContainer.PADDING);
+			String value = classes.get(i).toString(padding + '\t');
 			sb.append(value);
 			
 			if(totalValues-- > 0) sb.append(",");
@@ -159,7 +159,7 @@ public class SMClassObject implements Serializable {
 		
 		for(int i = 0; i < functions.size(); i++) {
 			String value = functions.get(i).toString();
-			sb.append(pad).append(SMContainer.PADDING).append(value);
+			sb.append(padding).append('\t').append(value);
 			
 			if(totalValues-- > 0) sb.append(",");
 			sb.append("\n");
@@ -167,13 +167,13 @@ public class SMClassObject implements Serializable {
 		
 		for(int i = 0; i < constants.size(); i++) {
 			String value = constants.get(i).toString();
-			sb.append(pad).append(SMContainer.PADDING).append(value);
+			sb.append(padding).append('\t').append(value);
 			
 			if(totalValues-- > 0) sb.append(",");
 			sb.append("\n");
 		}
 		
-		sb.append(pad).append("}");
+		sb.append(padding).append("}");
 		return sb.toString();
 	}
 }
