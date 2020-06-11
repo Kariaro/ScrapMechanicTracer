@@ -90,7 +90,6 @@ public class SMUtil {
 				list.clear();
 			}
 		} while(iter != null);
-		
 		list.clear();
 		
 		return object;

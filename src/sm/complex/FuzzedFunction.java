@@ -45,6 +45,10 @@ public class FuzzedFunction implements Serializable {
 		values.put(index, set);
 	}
 	
+	public boolean isRemoved() {
+		return errors.contains("$FUNCTION_REMOVED");
+	}
+	
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder().append("( ");

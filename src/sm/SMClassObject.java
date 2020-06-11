@@ -1,11 +1,12 @@
 package sm;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import sm.complex.SMStructure;
+import sm.complex.ScrapMechanic;
 import sm.util.LuaReg;
 import sm.util.LuaRegList;
 import sm.util.Util;
@@ -21,26 +22,25 @@ public class SMClassObject implements Serializable {
 	private String path;
 	private String name;
 	
-	public SMClassObject() {
-		this(null);
+	public SMClassObject(String path) {
+		this(path, null);
 	}
 	
-	public SMClassObject(SMObject object) {
-		functions = new ArrayList<SMFunctionObject>();
-		constants = new ArrayList<SMConstantObject>();
-		classes = new ArrayList<SMClassObject>();
+	public String getName() {
+		return name;
+	}
+	
+	public SMClassObject(String path, SMObject object) {
+		functions = new ArrayList<>();
+		constants = new ArrayList<>();
+		classes = new ArrayList<>();
+		this.path = path;
 		
 		if(object != null) {
 			loadSettings(object);
 			loadFunctions(object);
 			loadConstants(object);
 		}
-	}
-	
-	@Deprecated
-	protected void setPath(String fullPath) {
-		path = fullPath;
-		name = path.substring(path.lastIndexOf('.') + 1);
 	}
 	
 	public void loadSettings(SMObject obj) {
@@ -87,36 +87,24 @@ public class SMClassObject implements Serializable {
 		return set;
 	}
 	
-	// FIXME: This can give false positives
 	public boolean hasPath(String path) {
-		String thisPath = name.substring(name.lastIndexOf('.') + 1);
-		if(path.indexOf('.') < 0) {
+		int index = path.indexOf('.');
+		if(index < 0) {
 			return false;
 		}
 		
-		return path.startsWith(thisPath);
-	}
-	
-	// TODO: Error check these functions
-	public SMClassObject getClass(String path) {
-		// System.out.println("getClass \"" + name + "\" -> path = " + path);
+		//System.out.println("PT: " + path + ", NM: " + name);
+		//System.out.println("  : " + path.substring(0, index));
+		//String thisPath = name.substring(name.lastIndexOf('.') + 1);
+		//return path.startsWith(thisPath);
 		
-		if(name.equals(path)) {
-			return this;
-		} else {
-			path = path.substring(this.path.indexOf('.') + 1);
-			for(SMClassObject clazz : classes) {
-				if(clazz.hasPath(path)) {
-					return clazz.getClass(path);
-				}
-			}
-		}
-		
-		return null;
+		return name.equals(path.substring(0, index));
 	}
 	
 	protected SMClassObject addClassFull(String fullPath, String path) {
+		//System.out.println("SMClassObject: addClassFull  '" + fullPath + "' -> path = " + path);
 		path = path.substring(name.length() + 1);
+		//System.out.println("   path: " + path);
 		
 		if(path.indexOf('.') != -1) {
 			for(SMClassObject clazz : classes) {
@@ -126,8 +114,7 @@ public class SMClassObject implements Serializable {
 			}
 		}
 		
-		SMClassObject clazz = new SMClassObject();
-		clazz.setPath(fullPath);
+		SMClassObject clazz = new SMClassObject(fullPath);
 		classes.add(clazz);
 		if(path.indexOf('.') > 0) {
 			return clazz.addClassFull(fullPath, path);
@@ -144,7 +131,7 @@ public class SMClassObject implements Serializable {
 	protected String toString(String padding) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(padding);
-		if(SMStructure.SHOW_ADDRESS) sb.append(base).append(" -> ");
+		if(ScrapMechanic.SHOW_ADDRESS) sb.append(base).append(" -> ");
 		sb.append("\"").append(name).append("\": {\n");
 		
 		int totalValues = constants.size() + classes.size() + functions.size();

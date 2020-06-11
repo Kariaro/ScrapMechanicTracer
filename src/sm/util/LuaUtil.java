@@ -20,13 +20,10 @@ import ghidra.program.model.symbol.SymbolTable;
 public final class LuaUtil {
 	private static final String LIBRARY_NAME = "LUA51.DLL";
 	
-	private static Map<String, Type> TYPES = new HashMap<>();
 	private static Map<String, String> addr_to_name;
 	private static Map<String, String> name_to_addr;
+	private static Map<String, Type> types;
 	private static Set<String> functions;
-	
-	private LuaUtil() {
-	}
 	
 	public static void init(GhidraScript ghidra) throws Exception {
 		Program program = ghidra.getCurrentProgram();
@@ -53,8 +50,9 @@ public final class LuaUtil {
 			new Type("thread", 8)
 		};
 		
+		types = new HashMap<>();
 		for(Type type : lua_default) {
-			TYPES.put(type.name, type);
+			types.put(type.name, type);
 		}
 		
 		addr_to_name = new HashMap<>();
@@ -84,7 +82,7 @@ public final class LuaUtil {
 	}
 	
 	public static Map<String, Type> getTypes() {
-		return TYPES;
+		return types;
 	}
 	
 	public static boolean isLuaFunction(String name) {
@@ -115,11 +113,11 @@ public final class LuaUtil {
 	
 	public static void addType(String name, int id) {
 		String type_name = name.toLowerCase();
-		if(TYPES.containsKey(type_name)) {
-			TYPES.get(type_name).id = id;
+		if(types.containsKey(type_name)) {
+			types.get(type_name).id = id;
 		} else {
 			Type type = new Type(type_name, id);
-			TYPES.put(type_name, type);
+			types.put(type_name, type);
 		}
 	}
 	
@@ -136,17 +134,17 @@ public final class LuaUtil {
 	
 	public static Type getType(String name) {
 		String type_name = name.toLowerCase();
-		if(TYPES.containsKey(type_name)) {
-			return TYPES.get(type_name);
+		if(types.containsKey(type_name)) {
+			return types.get(type_name);
 		}
 		
 		Type type = new Type(type_name, Integer.MIN_VALUE);
-		TYPES.put(type_name, type);
+		types.put(type_name, type);
 		return type;
 	}
 	
 	public static String getTypeNameFromId(long id) {
-		for(Type type : TYPES.values()) {
+		for(Type type : types.values()) {
 			if(type.id == id) return type.name;
 		}
 		return null;
@@ -189,15 +187,13 @@ public final class LuaUtil {
 		
 		@Override
 		public boolean equals(Object obj) {
-			if(obj instanceof Type) {
-				return name.equals(((Type)obj).name);
-			}
-			return false;
+			if(obj == null || !(obj instanceof Type)) return false;
+			return name.equals(((Type)obj).name);
 		}
 		
 		@Override
 		public String toString() {
-			return new StringBuilder().append("(").append(name).append("  id=").append(Integer.toHexString(id)).append(")").toString();
+			return new StringBuilder().append("(name = '").append(name).append("' id = ").append(Integer.toHexString(id)).append(")").toString();
 		}
 	}
 }

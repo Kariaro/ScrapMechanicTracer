@@ -1,6 +1,6 @@
 package sm.complex;
 
-import static sm.complex.SMStructure.*;
+import static sm.complex.ScrapMechanic.*;
 
 import java.io.Closeable;
 import java.util.ArrayList;
@@ -11,6 +11,7 @@ import ghidra.app.cmd.disassemble.DisassembleCommand;
 import ghidra.app.decompiler.DecompInterface;
 import ghidra.app.decompiler.DecompileResults;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.address.AddressFactory;
 import ghidra.program.model.address.AddressRange;
 import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.address.AddressSetView;
@@ -20,6 +21,7 @@ import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.pcode.HighFunction;
 import ghidra.program.model.pcode.HighVariable;
+import ghidra.program.model.pcode.PcodeBlockBasic;
 import ghidra.program.model.pcode.PcodeOp;
 import ghidra.program.model.pcode.PcodeOpAST;
 import ghidra.program.model.pcode.Varnode;
@@ -40,13 +42,14 @@ import sm.util.Util;
 public class FunctionExplorer implements Closeable {
 	private static final String CALL = "CALL";
 	private static final String COPY = "COPY";
-	private static final int MAX_DEPTH = 3;
+	private static final int MAX_DEPTH = 4;
 	
 	private boolean isClosed;
 	
 	private final DataType LUA_STATE_PTR_DATATYPE;
 	private final DataType INT_DATATYPE;
 	private DecompInterface decomp;
+	
 	public FunctionExplorer() {
 		decomp = new DecompInterface();
 		decomp.toggleCCode(false);
@@ -57,10 +60,13 @@ public class FunctionExplorer implements Closeable {
 	}
 	
 	public FuzzedFunction evaluate(SMFunctionObject object) {
+		return evaluate(object.getFunction());
+	}
+	
+	public FuzzedFunction evaluate(Function function) {
 		if(isClosed) return null;
 		
 		FuzzedFunction fuzzed = new FuzzedFunction();
-		Function function = object.getFunction();
 		
 		Varnode[] varnode = new Varnode[1];
 		{
@@ -97,7 +103,7 @@ public class FunctionExplorer implements Closeable {
 		}
 		
 		enterFunction(fuzzed, function.getEntryPoint(), 0, varnode);
-		object.setFuzzedFunction(fuzzed);
+		//object.setFuzzedFunction(fuzzed);
 		
 		return fuzzed;
 	}
@@ -108,14 +114,15 @@ public class FunctionExplorer implements Closeable {
 		Function function = Util.getFunctionAt(callAddress);
 		
 		// TODO: Find a better way of checking if a function is deassembled!
-		if(Util.getInstructionAt(callAddress) == null || true) {
+		if(Util.getInstructionAt(callAddress) == null) {
 			DisassembleCommand command = new DisassembleCommand(callAddress, null, true);
 			command.applyTo(Util.getProgram(), Util.getMonitor());
 		}
 		
+		if(TRACE) System.out.println("Addr: " + callAddress + ", " + function);
 		if(function == null) return;
 		
-		DecompileResults result = decomp.decompileFunction(function, SMStructure.DECOMPILE_TIMEOUT, null);
+		DecompileResults result = decomp.decompileFunction(function, DECOMPILE_TIMEOUT, null);
 		HighFunction local = result.getHighFunction();
 		if(local == null) {
 			/* This is usually the result of a TimeoutException or that the
@@ -137,7 +144,6 @@ public class FunctionExplorer implements Closeable {
 	
 	private void traverseFunction(FuzzedFunction fuzzed, HighFunction local, int depth, Varnode[] params) {
 		List<Instruction> instructions = getCallInstructions(local);
-		System.out.println("Insts: " + instructions);
 		
 		for(int instIndex = 0; instIndex < instructions.size(); instIndex++) {
 			Instruction inst = instructions.get(instIndex);
@@ -210,15 +216,20 @@ public class FunctionExplorer implements Closeable {
 						//       of complexity.
 						//
 						Function nextFunction = Util.getFunctionAt(callAddress);
-						
+
 						// NOTE: This is really unexpected
 						if(nextFunction == null) break;
+						
+						if(nextFunction.getAutoParameterCount() != 0) {
+							nextFunction.setCustomVariableStorage(true);
+						}
+						
 						
 						Parameter[] nextFunctionParams = nextFunction.getParameters();
 						if(nextFunctionParams.length > i) {
 							Parameter param = nextFunctionParams[i];
 							
-							if(!param.getDataType().equals(LUA_STATE_PTR_DATATYPE)) {
+							if(!param.getDataType().isEquivalent(LUA_STATE_PTR_DATATYPE)) {
 								try {
 									param.setDataType(LUA_STATE_PTR_DATATYPE, SourceType.ANALYSIS);
 								} catch(InvalidInputException e) {
@@ -229,12 +240,26 @@ public class FunctionExplorer implements Closeable {
 					}
 				}
 				
+				{
+					// Check the 'has been removed' message.
+					for(Varnode node : nextParams) {
+						if(node == null || !node.isUnique()) continue;
+						
+						String message = getStringFromUnique(node);
+						if(message != null && message.contains("has been removed")) {
+							fuzzed.errors.add("$FUNCTION_REMOVED");
+							return;
+						}
+					}
+				}
+				
 				if(traverse) {
 					// TODO: Sometimes arguments are pushed into registers before being pushed to a
 					//       call command. The task is to check if any of these registers point to
 					//       the current functions parameters. And if so change that value into the
 					//       last known parameter value. Otherwise it should be null.
 					//
+					
 					if(TRACE) {
 						System.out.printf("%s, %s\n", instAddress, inst);
 						for(int i = 0; i < nextParams.length; i++) {
@@ -242,6 +267,7 @@ public class FunctionExplorer implements Closeable {
 							System.out.printf("        args[%d]: %s\n", i, node);
 						}
 						System.out.println();
+						System.out.println("Test: " + MAX_DEPTH + ", " + depth);
 					}
 					
 					enterFunction(fuzzed, callAddress, depth + 1, nextParams);
@@ -337,31 +363,67 @@ public class FunctionExplorer implements Closeable {
 	 * @return All the call instructions inside the given function.
 	 */
 	private List<Instruction> getCallInstructions(HighFunction set) {
-		List<Instruction> list = new ArrayList<Instruction>();
+		List<Instruction> list = new ArrayList<>();
 		
-		// TODO: Sometimes this size is zero...
+		// NOTE: Sometimes function.getBody() returns a zero sized AddressSetView.
 		AddressSetView view = set.getFunction().getBody();
-		Iterator<AddressRange> memory = view.iterator();
-		System.out.println("View: " + view);
 		
-		while(memory.hasNext()) {
-			AddressRange range = memory.next();
-			System.out.println("Range: " + range);
+		//if(view.getMaxAddress().subtract(view.getMinAddress()) == 0) {
 			
-			Instruction inst = Util.getInstructionAt(range.getMinAddress());
+		//} else {
+			List<AddressSet> ranges = new ArrayList<>();
 			
-			while(inst != null) {
-				if(!range.contains(inst.getAddress())) break;
-				
-				System.out.printf("%s, %s\n", inst.getAddress(), inst);
-				
-				if(CALL.equals(inst.getMnemonicString())) {
-					list.add(inst);
+			{
+				AddressFactory factory = Util.getScript().getAddressFactory();
+				for(PcodeBlockBasic basic : set.getBasicBlocks()) {
+					//System.out.println("  start = " + basic.getStart());
+					//System.out.println("  stop  = " + basic.getStop());
+					
+					ranges.add(factory.getAddressSet(basic.getStart(), basic.getStop()));
 				}
-				
-				inst = inst.getNext();
 			}
-		}
+			
+			
+			for(AddressSet range : ranges) {
+				Instruction inst = Util.getInstructionAt(range.getMinAddress());
+				
+				while(inst != null) {
+					if(!range.contains(inst.getAddress())) break;
+					
+					// System.out.printf("%s, %s\n", inst.getAddress(), inst);
+					
+					if(CALL.equals(inst.getMnemonicString())) {
+						list.add(inst);
+					}
+					
+					inst = inst.getNext();
+				}
+			}
+			
+			if(TRACE) System.out.println("View: " + view);
+			
+			Iterator<AddressRange> memory = view.iterator();
+			while(memory.hasNext()) {
+				AddressRange range = memory.next();
+				if(TRACE) System.out.println("Range: " + range);
+				
+				Instruction inst = Util.getInstructionAt(range.getMinAddress());
+				
+				while(inst != null) {
+					if(!range.contains(inst.getAddress())) break;
+					
+					//System.out.printf("%s, %s\n", inst.getAddress(), inst);
+					
+					if(CALL.equals(inst.getMnemonicString())) {
+						if(!list.contains(inst)) {
+							list.add(inst);
+						}
+					}
+					
+					inst = inst.getNext();
+				}
+			}
+		//}
 		
 		/*
 		Instruction inst = Util.getInstructionBefore(set);
@@ -447,11 +509,11 @@ public class FunctionExplorer implements Closeable {
 		
 		for(int i = 2; i < 4; i++) {
 			Varnode input = command.getInput(i);
-			System.out.printf("        [%d]: %s\n", i, input);
+			if(TRACE) System.out.printf("        [%d]: %s\n", i, input);
 			if(input == null) continue;
 			
 			HighVariable hv = input.getHigh();
-			System.out.printf("          high: %s\n", hv.getName());
+			if(TRACE) System.out.printf("          high: %s\n", hv.getName());
 			
 			int count = 0;
 			Varnode[] mem = hv.getInstances();
@@ -460,7 +522,7 @@ public class FunctionExplorer implements Closeable {
 				PcodeOp op = m.getDef();
 				if(op == null) continue;
 				
-				System.out.printf("              [%d]: %s    %s\n", j, op, op.getInput(0).getDef());
+				if(TRACE) System.out.printf("              [%d]: %s    %s\n", j, op, op.getInput(0).getDef());
 				
 				if(COPY.equals(op.getMnemonic())) {
 					msgCount[(i - 2) * 2 + (count++)] = op;
@@ -473,19 +535,19 @@ public class FunctionExplorer implements Closeable {
 		
 		for(int i = 0; i < 4; i++) {
 			if(msgCount[i] == null) return false;
-			System.out.printf("        [%d]: %s\n", i, msgCount[i]);
+			if(TRACE) System.out.printf("        [%d]: %s\n", i, msgCount[i]);
 		}
 		
 		// Read message
 		for(int i = 0; i < 2; i++) {
-			System.out.printf("        [%d]: %s\n", i, msgCount[i].getInput(0).getOffset());
+			if(TRACE) System.out.printf("        [%d]: %s\n", i, msgCount[i].getInput(0).getOffset());
 			String str = Util.readTerminatedString(Util.getAddressFromLong(msgCount[i].getInput(0).getOffset()));
 			if(str == null) return false;
-			System.out.printf("        [%d]: str = %s\n", i, str);
+			if(TRACE) System.out.printf("        [%d]: str = %s\n", i, str);
 			
 			int args = Util.toSignedInt(msgCount[i + 2].getInput(0).getOffset());
 			
-			System.out.printf("        [%d]: args = %s\n", i, args);
+			if(TRACE) System.out.printf("        [%d]: args = %s\n", i, args);
 			if(str.startsWith("Expected %d arguments")) {
 				fuzzed.minimumArguments = args;
 				fuzzed.maximumArguments = args;

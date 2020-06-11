@@ -13,12 +13,14 @@ import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.MemoryAccessException;
+import ghidra.program.model.mem.MemoryBlock;
 import ghidra.program.model.pcode.HighFunction;
 import ghidra.program.model.pcode.PcodeOp;
 import ghidra.program.model.pcode.PcodeOpAST;
 import ghidra.program.model.pcode.Varnode;
 import ghidra.util.task.TaskMonitor;
 
+// TODO: Remove unnecessary functions
 public class Util {
 	private static GhidraScript SCRIPT;
 	public static void init(GhidraScript ghidra) {
@@ -47,7 +49,13 @@ public class Util {
 	
 	
 	public static boolean isValidAddress(Address addr) {
-		return SCRIPT.getAddressFactory().isValidAddress(addr);
+		MemoryBlock block = SCRIPT.getCurrentProgram().getMemory().getBlock(addr);
+		if(block == null) return false;
+		
+		return block.isInitialized() && block.isLoaded();
+		
+		//return SCRIPT.getCurrentProgram().getMemory().contains(addr);
+		//return SCRIPT.getAddressFactory().isValidAddress(addr);
 	}
 	
 	public static String readTerminatedString(Address addr) {
@@ -80,7 +88,7 @@ public class Util {
 		
 		return new String(bs.toByteArray());
 	}
-
+	
 	public static int getFunctionLength(Function func) {
 		AddressSetView view = func.getBody();
 		Address min = view.getMinAddress();
@@ -186,18 +194,21 @@ public class Util {
 	public static Instruction getInstructionBefore(HighFunction function) {
 		return SCRIPT.getInstructionBefore(function.getFunction().getEntryPoint());
 	}
-
+	
+	@Deprecated
 	public static long getOffset(Function func, Address addr) {
 		return addr.getOffset() - func.getEntryPoint().getOffset();
 	}
 	
+	@Deprecated
 	public static boolean isInside(Instruction inst, Function func) {
 		Address max_addr = func.getBody().getMaxAddress();
 		Address cur_addr = inst.getAddress();
 		
 		return max_addr.compareTo(cur_addr) >= 0;
 	}
-	
+
+	@Deprecated
 	public static boolean isInside(Instruction inst, HighFunction func) {
 		Address max_addr = func.getFunction().getBody().getMaxAddress();
 		Address cur_addr = inst.getAddress();

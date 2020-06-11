@@ -1,21 +1,16 @@
 // @author HardCoded
+//
 // @category ScrapMechanicTracer
 // @keybinding 
 // @menupath 
 // @toolbar 
 
-import java.io.File;
-
-import ghidra.app.plugin.core.script.Ingredient;
-import ghidra.app.plugin.core.script.IngredientDescription;
-import ghidra.app.script.GatherParamPanel;
 import ghidra.app.script.GhidraScript;
-import ghidra.framework.model.DomainFolder;
+import sm.complex.ScrapMechanic;
 import sm.importer.Importer;
 import sm.importer.PointerFinder;
 import sm.util.CacheUtil;
 import sm.util.LuaUtil;
-import sm.util.ScrapMechanic;
 import sm.util.Util;
 
 /**
@@ -24,7 +19,7 @@ import sm.util.Util;
  * 
  * @author HardCoded
  */
-public class ScrapMechanicTracer extends GhidraScript implements Ingredient {
+public class ScrapMechanicTracer extends GhidraScript {
 	public static final void main(String[] args) {
 		System.out.println("[Hopefully this will get compiled :&]");
 	}
@@ -33,30 +28,22 @@ public class ScrapMechanicTracer extends GhidraScript implements Ingredient {
 	// NOTE: ??? Does it need to analyse 'Function ID'
 	
 	// TODO: Create a nice gui for this scanner.
+	// TODO: Create cache directory at the path '%USERPROFILE%'
+	// private static final String STRINGS_MEMORY_BLOCK = ".rdata";
+	// private static final String REFERENCES_MEMORY_BLOCK = ".data";
 	
 	public void run() throws Exception {
 		DevUtil.replacePrintStreams(this);
 		DevUtil.replaceGhidraBin(this);
 		
-		IngredientDescription[] ingredients = getIngredientDescriptions();
-		for(int i = 0; i < ingredients.length; i++) {
-			IngredientDescription ingredient = ingredients[i];
-			
-			state.addParameter(
-				ingredient.getID(),
-				ingredient.getLabel(),
-				ingredient.getType(),
-				ingredient.getDefaultValue()
-			);
-		}
-		
-		if(!state.displayParameterGatherer("ScrapMechanicTracer Options")) {
+		/*if(!state.displayParameterGatherer("ScrapMechanicTracer Options")) {
 			return;
-		}
+		}*/
 		
 		// state.getEnvironmentVar(< id >);
 		
 		//DomainFolder folder = askProjectFolder("Please select a project folder to RECURSIVELY look for a named function:");
+		
 		
 		// Initialize the util
 		Util.init(this);
@@ -80,7 +67,12 @@ public class ScrapMechanicTracer extends GhidraScript implements Ingredient {
 		
 		{
 			try {
-				ScrapMechanic.launch();
+				ScrapMechanic structure = new ScrapMechanic(false);
+				
+				System.out.println("Generated structure: " + structure);
+				structure.evaluate();
+				
+				//ScrapMechanic.launch();
 			} catch(Exception e) {
 				e.printStackTrace();
 			}
@@ -96,18 +88,5 @@ public class ScrapMechanicTracer extends GhidraScript implements Ingredient {
 
 		println("--------------------------------------------------------------------------");
 	}
-	
-	// private static final String STRINGS_MEMORY_BLOCK = ".rdata";
-	// private static final String REFERENCES_MEMORY_BLOCK = ".data";
-	@Override
-	public IngredientDescription[] getIngredientDescriptions() {
-		IngredientDescription[] retVal = new IngredientDescription[] {
-			new IngredientDescription("STRINGS_MEMORY_BLOCK",		"Strings", GatherParamPanel.STRING, ".rdata"),
-			new IngredientDescription("REFERENCES_MEMORY_BLOCK",	"References", GatherParamPanel.STRING, ".data"),
-			new IngredientDescription("OUTPUT_FILE",				"Output file", GatherParamPanel.FILE, "")
-		};
-		return retVal;
-	}
-
 }
                                   

@@ -20,25 +20,29 @@ import sm.util.Util;
  */
 public class PointerFinder {
 	// TODO: Make the user be able to edit these...
-	private static final String STRINGS_MEMORY_BLOCK = ".rdata";
-	private static final String REFERENCES_MEMORY_BLOCK = ".data";
+	public static final String STRINGS_MEMORY_BLOCK = ".rdata";
+	public static final String REFERENCES_MEMORY_BLOCK = ".data";
 	
 	private static final String NAME_PATTERN = "[a-zA-Z0-9.]+";
 	private static final int MAX_STRUCTURE_SIZE = 256;
-	private static Set<Address> STRUCTURES;
+	
+	private static Set<Address> structures;
+	private static String version;
 	
 	public static void init(GhidraScript ghidra) throws Exception {
+		version = findVersionString(STRINGS_MEMORY_BLOCK);
+		
 		List<StringPointer> list = new ArrayList<>();
 		findStrings(STRINGS_MEMORY_BLOCK, list);
 		
 		List<StringPointer> groupList = new ArrayList<>();
 		findReferences(REFERENCES_MEMORY_BLOCK, list, groupList);
 		
-		STRUCTURES = new HashSet<>();
-		findStructures(groupList, list, STRUCTURES);
+		structures = new HashSet<>();
+		findStructures(groupList, list, structures);
 		
 		System.out.println("Structures:");
-		for(Address structure : STRUCTURES) {
+		for(Address structure : structures) {
 			System.out.println("  pointer = " + structure);
 		}
 		
@@ -46,7 +50,12 @@ public class PointerFinder {
 	}
 	
 	public static Set<Address> getStructures() {
-		return STRUCTURES;
+		return structures;
+	}
+	
+	private static String findVersionString(String blockName) {
+		// TODO: Implement!
+		return null;
 	}
 	
 	private static void findStrings(String blockName, List<StringPointer> list) throws Exception {

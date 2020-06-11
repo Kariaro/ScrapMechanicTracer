@@ -3,7 +3,7 @@ import java.io.Serializable;
 
 import ghidra.program.model.listing.Function;
 import sm.complex.FuzzedFunction;
-import sm.complex.SMStructure;
+import sm.complex.ScrapMechanic;
 import sm.util.LuaReg;
 import sm.util.Util;
 
@@ -36,6 +36,10 @@ public class SMFunctionObject implements Serializable {
 		return Util.getFunctionAt(functionAddress);
 	}
 	
+	public String getFunctionAddressString() {
+		return functionAddress;
+	}
+	
 	/**
 	 * This object will contain the data found by exploring
 	 * the functions. This data can be serialized.
@@ -57,12 +61,22 @@ public class SMFunctionObject implements Serializable {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		if(SMStructure.SHOW_ADDRESS) sb.append(functionAddress).append(" -> ");
+		if(ScrapMechanic.SHOW_ADDRESS) sb.append(functionAddress).append(" -> ");
+		if(fuzzed != null) {
+			if(fuzzed.isRemoved()) {
+				sb.append("[REMOVED] ");
+			}
+		}
+		
 		sb.append(local ? "[userdata] ":"function ")
 		  .append(name);
 		
 		if(fuzzed != null) {
-			sb.append(fuzzed.toString());
+			if(!fuzzed.isRemoved()) {
+				sb.append(fuzzed.toString());
+			} else {
+				sb.append("( )");
+			}
 		} else {
 			sb.append("( Fuzzed is NULL )");
 		}

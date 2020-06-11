@@ -64,8 +64,8 @@ public class Importer {
 	};
 	
 	private static DataTypeManager manager;
-	private static Category root;
 	private static Category luaPath;
+	private static Category root;
 	
 	public static void init(GhidraScript ghidra) throws Exception {
 		manager = ghidra.getCurrentProgram().getDataTypeManager();
@@ -74,7 +74,7 @@ public class Importer {
 		if(!root.getName().equals(ROOT_NAME)) {
 			// TODO: What if the executable is renamed at some point????
 			
-			throw new Exception("Invalid Executable Selected... Expected 'ScrapMechanic.exe' got '" + root.getName() + '"');
+			throw new Exception("Invalid Executable Selected, Expected 'ScrapMechanic.exe' got '" + root.getName() + '"');
 		}
 		
 		loadDataTypes(ghidra);

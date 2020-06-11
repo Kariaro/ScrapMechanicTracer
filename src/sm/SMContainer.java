@@ -6,75 +6,44 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import ghidra.program.model.mem.MemoryAccessException;
-import sm.util.LuaReg;
-import sm.util.LuaRegList;
-import sm.util.SMUtil;
-
-// TODO: Fix all the add commands to look nicer.
 public class SMContainer implements Serializable {
 	private static final long serialVersionUID = 3314121831232541563L;
-	private static final transient String PADDING = "    ";
 	
 	protected List<SMClassObject> classes;
 	
 	public SMContainer() {
-		classes = new ArrayList<SMClassObject>();
-	}
-	
-	public static final SMContainer load(String... list) throws MemoryAccessException {
-		SMContainer container = new SMContainer();
-		
-		for(String addr : list) {
-			LuaRegList refs = new LuaRegList(addr);
-			
-			for(LuaReg ref : refs) {
-				SMObject obj = SMUtil.loadSMObject(ref);	
-				
-				container.classes.add(new SMClassObject(obj));
-			}
-		}
-		
-		return null;
+		classes = new ArrayList<>();
 	}
 	
 	public Set<SMFunctionObject> getAllFunctions() {
-		HashSet<SMFunctionObject> set = new HashSet<>();
-		for(SMClassObject clazz : classes) {
-			set.addAll(clazz.getAllFunctions());
+		Set<SMFunctionObject> set = new HashSet<>();
+		// classes.stream().forEach((object) -> set.addAll(object.getAllFunctions()));
+		
+		for(SMClassObject object : classes) {
+			set.addAll(object.getAllFunctions());
 		}
+		
 		return set;
 	}
 	
-	public SMClassObject getClass(String path) {
-		if(path.startsWith("sm.")) {
-			path = path.substring(3);
-		}
-		
-		for(SMClassObject clazz : classes) {
-			if(clazz.hasPath(path)) {
-				return clazz.getClass(path);
-			}
-		}
-		
-		return null;
-	}
-	
+	/**
+	 * This is only used internally.
+	 * 
+	 * @param path
+	 * @return
+	 */
 	public SMClassObject addClass(String path) {
 		return addClassFull(path, path.substring(3));
 	}
 	
 	protected SMClassObject addClassFull(String fullPath, String path) {
-		// System.out.println("SMContainer: addClassFull  \"" + fullPath + "\" -> path = " + path);
-		
 		for(SMClassObject clazz : classes) {
 			if(clazz.hasPath(path)) {
 				return clazz.addClassFull(fullPath, path);
 			}
 		}
 		
-		SMClassObject clazz = new SMClassObject();
-		clazz.setPath(fullPath);
+		SMClassObject clazz = new SMClassObject(fullPath);
 		classes.add(clazz);
 		
 		return clazz;
@@ -97,6 +66,6 @@ public class SMContainer implements Serializable {
 		}
 		sb.append("}");
 		
-		return sb.toString().replace("\t", PADDING);
+		return sb.toString();
 	}
 }
