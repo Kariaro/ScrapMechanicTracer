@@ -14,7 +14,7 @@ import ghidra.app.script.GhidraScriptUtil;
 import ghidra.app.script.ScriptInfo;
 
 public class DevUtil {
-	public static File classPath;
+	//public static File classPath;
 	
 	public static void replaceGhidraBin(final GhidraScript script) {
 		String scriptName = script.toString();
@@ -43,7 +43,7 @@ public class DevUtil {
 		
 		// path = "/"
 		ResourceFile path = file.getParentFile().getParentFile();
-		classPath = path.getFile(false);
+		File classPath = path.getFile(false);
 		
 		// path = "/bin"
 		String binPath = StringUtils.joinWith(File.separator, classPath, "bin");

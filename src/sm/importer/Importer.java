@@ -1,6 +1,7 @@
 package sm.importer;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.PrintStream;
 
 import ghidra.app.cmd.function.ApplyFunctionSignatureCmd;
@@ -19,6 +20,7 @@ import ghidra.program.model.symbol.SourceType;
 import ghidra.program.model.symbol.Symbol;
 import ghidra.program.model.symbol.SymbolIterator;
 import ghidra.program.model.symbol.SymbolTable;
+import sm.complex.ScrapMechanic;
 import sm.util.Util;
 
 /**
@@ -30,9 +32,6 @@ import sm.util.Util;
  * @author HardCoded
  */
 public class Importer {
-	private static final String ROOT_NAME = "ScrapMechanic.exe";
-	private static final String LIBRARY_NAME = "LUA51.DLL";
-	
 	public static final String LUA_STATE =
 		"typedef struct lua_State lua_State;";
 	
@@ -71,7 +70,7 @@ public class Importer {
 		manager = ghidra.getCurrentProgram().getDataTypeManager();
 		root = manager.getRootCategory();
 		
-		if(!root.getName().equals(ROOT_NAME)) {
+		if(!root.getName().equals(ScrapMechanic.ROOT_NAME)) {
 			// TODO: What if the executable is renamed at some point????
 			
 			throw new Exception("Invalid Executable Selected, Expected 'ScrapMechanic.exe' got '" + root.getName() + '"');
@@ -79,9 +78,19 @@ public class Importer {
 		
 		loadDataTypes(ghidra);
 		loadFunctionSignatures(ghidra);
+		initDirectories(ghidra);
 	}
 	
-	private static void loadDataTypes(GhidraScript ghidra) throws Exception{
+	private static void initDirectories(GhidraScript ghidra) throws Exception {
+		String userHome = System.getProperty("user.home");
+		
+		File path = new File(userHome, "ScrapMechanicTracer/traces");
+		if(!path.exists()) {
+			path.mkdirs();
+		}
+	}
+	
+	private static void loadDataTypes(GhidraScript ghidra) throws Exception {
 		luaPath = root.getCategory("lua.h");
 		if(luaPath == null) {
 			System.out.println("Adding 'lua.h' category");
@@ -184,9 +193,9 @@ public class Importer {
 		Program program = ghidra.getCurrentProgram();
 		SymbolTable table = program.getSymbolTable();
 		
-		Symbol library = table.getLibrarySymbol(LIBRARY_NAME);
+		Symbol library = table.getLibrarySymbol(ScrapMechanic.LIBRARY_NAME);
 		if(library == null) {
-			throw new Exception("Failed to find the library '" + LIBRARY_NAME + "'");
+			throw new Exception("Failed to find the library '" + ScrapMechanic.LIBRARY_NAME + "'");
 		}
 		
 		SymbolIterator iterator = table.getChildren(library);

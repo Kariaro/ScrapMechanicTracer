@@ -4,13 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import ghidra.app.cmd.disassemble.DisassembleCommand;
-import ghidra.app.decompiler.DecompInterface;
-import ghidra.app.decompiler.DecompileOptions;
-import ghidra.app.decompiler.parallel.DecompileConfigurer;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
-import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.MemoryAccessException;
 import sm.SMObject;
 
@@ -95,6 +91,7 @@ public class SMUtil {
 		return object;
 	}
 	
+	/*
 	static class BasicDecompileConfigurer implements DecompileConfigurer {
 		private Program program;
 
@@ -112,6 +109,7 @@ public class SMUtil {
 			decomp.setOptions(opts);
 		}
 	}
+	*/
 	
 	private static Address getAddress(Instruction inst) {
 		String string = inst.toString();

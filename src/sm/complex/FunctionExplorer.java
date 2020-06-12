@@ -42,13 +42,11 @@ import sm.util.Util;
 public class FunctionExplorer implements Closeable {
 	private static final String CALL = "CALL";
 	private static final String COPY = "COPY";
-	private static final int MAX_DEPTH = 4;
-	
-	private boolean isClosed;
 	
 	private final DataType LUA_STATE_PTR_DATATYPE;
 	private final DataType INT_DATATYPE;
 	private DecompInterface decomp;
+	private boolean isClosed;
 	
 	public FunctionExplorer() {
 		decomp = new DecompInterface();
@@ -172,7 +170,7 @@ public class FunctionExplorer implements Closeable {
 				}
 				
 				processCommand(fuzzed, function, command, nextParams);
-			} else if(depth < MAX_DEPTH) {
+			} else if(depth < DECOMPILE_MAX_DEPTH) {
 				if(TRACE) {
 					System.out.println("---------------------------------");
 				}
@@ -267,7 +265,7 @@ public class FunctionExplorer implements Closeable {
 							System.out.printf("        args[%d]: %s\n", i, node);
 						}
 						System.out.println();
-						System.out.println("Test: " + MAX_DEPTH + ", " + depth);
+						System.out.println("Test: " + DECOMPILE_MAX_DEPTH + ", " + depth);
 					}
 					
 					enterFunction(fuzzed, callAddress, depth + 1, nextParams);

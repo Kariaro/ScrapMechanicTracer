@@ -9,6 +9,7 @@ import ghidra.app.script.GhidraScript;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.mem.Memory;
 import ghidra.program.model.mem.MemoryBlock;
+import sm.complex.ScrapMechanic;
 import sm.util.Util;
 
 /**
@@ -19,10 +20,7 @@ import sm.util.Util;
  * @author HardCoded
  */
 public class PointerFinder {
-	// TODO: Make the user be able to edit these...
-	public static final String STRINGS_MEMORY_BLOCK = ".rdata";
-	public static final String REFERENCES_MEMORY_BLOCK = ".data";
-	
+	// TODO: Custom memory block searching
 	private static final String NAME_PATTERN = "[a-zA-Z0-9.]+";
 	private static final int MAX_STRUCTURE_SIZE = 256;
 	
@@ -30,13 +28,13 @@ public class PointerFinder {
 	private static String version;
 	
 	public static void init(GhidraScript ghidra) throws Exception {
-		version = findVersionString(STRINGS_MEMORY_BLOCK);
+		version = findVersionString(ScrapMechanic.STRINGS_MEMORY_BLOCK);
 		
 		List<StringPointer> list = new ArrayList<>();
-		findStrings(STRINGS_MEMORY_BLOCK, list);
+		findStrings(ScrapMechanic.STRINGS_MEMORY_BLOCK, list);
 		
 		List<StringPointer> groupList = new ArrayList<>();
-		findReferences(REFERENCES_MEMORY_BLOCK, list, groupList);
+		findReferences(ScrapMechanic.REFERENCES_MEMORY_BLOCK, list, groupList);
 		
 		structures = new HashSet<>();
 		findStructures(groupList, list, structures);
@@ -116,7 +114,6 @@ public class PointerFinder {
 				// Not an exact match: Grrrr.
 				
 				// TODO: Complex algorithm to find the pointers!
-				
 				System.out.println("name = " + pointer.name);
 				System.out.println("addr = " + pointer.addr);
 				System.out.println("    list = " + matches);

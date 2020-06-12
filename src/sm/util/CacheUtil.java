@@ -7,6 +7,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Properties;
+import java.util.function.Function;
 
 import sm.SMContainer;
 
@@ -16,24 +18,80 @@ import sm.SMContainer;
  * @author HardCoded
  */
 public class CacheUtil {
-	private static File resourcePath;
+	private static File tracePath;
 	private static File cachePath;
-	
-	public static final File getResourcePath() {
-		return resourcePath;
-	}
+	private static File propertiesFile;
+	private static Properties properties;
 	
 	public static final File getCachePath() {
 		return cachePath;
 	}
 	
-	public static void init(File path) {
-		resourcePath = new File(path, "res");
-		cachePath = new File(resourcePath, "cache");
-		
-		if(!cachePath.exists()) {
-			cachePath.mkdirs();
+	public static final File getTracePath() {
+		return tracePath;
+	}
+	
+	public static final String getProperty(String key) {
+		return properties.getProperty(key);
+	}
+	
+	public static final String getProperty(String key, String def) {
+		if(!properties.containsKey(key)) {
+			setProperty(key, def);
 		}
+		
+		return properties.getProperty(key);
+	}
+	
+	public static final <T> T getProperty(String key, String def, Function<String,T> obj) {
+		if(!properties.containsKey(key)) {
+			setProperty(key, def);
+		}
+		
+		return obj.apply(properties.getProperty(key));
+	}
+	
+	public static final void setProperty(String key, Object value) {
+		properties.setProperty(key, value.toString());
+		
+		try {
+			saveProperties();
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static void init() throws Exception {
+		String userHome = System.getProperty("user.home");
+		
+		cachePath = new File(userHome, "ScrapMechanicTracer/cache");
+		if(!cachePath.exists()) cachePath.mkdirs();
+		
+		propertiesFile = new File(userHome, "ScrapMechanicTracer/.properties");
+		properties = new Properties();
+		
+		if(!propertiesFile.exists()) {
+			propertiesFile.createNewFile();
+			saveProperties();
+		}
+		
+		String path = properties.getProperty(
+			"traces.path",
+			new File(userHome, "ScrapMechanicTracer/traces").getAbsolutePath()
+		);
+		
+		tracePath = new File(path);//userHome, "ScrapMechanicTracer/traces");
+		if(!tracePath.exists()) tracePath.mkdirs();
+		
+		FileInputStream stream = new FileInputStream(propertiesFile);
+		properties.load(stream);
+		stream.close();
+	}
+	
+	private static void saveProperties() throws Exception {
+		FileOutputStream stream = new FileOutputStream(propertiesFile);
+		properties.store(stream, "Saved from CacheUtil.java");
+		stream.close();
 	}
 	
 	public static SMContainer load(String name) {

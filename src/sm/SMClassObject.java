@@ -75,6 +75,7 @@ public class SMClassObject implements Serializable {
 	public void loadConstants(SMObject obj) {
 		if(!obj.hasConstant()) return;
 		
+		System.out.println("Constants: " + obj.getConstant());
 		// TODO: Implement
 	}
 	

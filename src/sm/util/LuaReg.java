@@ -6,7 +6,7 @@ import ghidra.program.model.listing.Function;
 /**
  * This is the object read from an {@link LuaRegList}
  * 
- *<pre>struct lua_Ref {
+ *<pre>struct lua_Reg {
  *    char* name;
  *    lua_CFunction func;
  *}</pre>

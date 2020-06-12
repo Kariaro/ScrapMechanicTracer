@@ -15,11 +15,9 @@ import ghidra.program.model.symbol.ExternalLocation;
 import ghidra.program.model.symbol.Symbol;
 import ghidra.program.model.symbol.SymbolIterator;
 import ghidra.program.model.symbol.SymbolTable;
+import sm.complex.ScrapMechanic;
 
-// NOTE: Rework this class.. It's ugly
 public final class LuaUtil {
-	private static final String LIBRARY_NAME = "LUA51.DLL";
-	
 	private static Map<String, String> addr_to_name;
 	private static Map<String, String> name_to_addr;
 	private static Map<String, Type> types;
@@ -29,9 +27,9 @@ public final class LuaUtil {
 		Program program = ghidra.getCurrentProgram();
 		SymbolTable table = program.getSymbolTable();
 		
-		Symbol library = table.getLibrarySymbol(LIBRARY_NAME);
+		Symbol library = table.getLibrarySymbol(ScrapMechanic.LIBRARY_NAME);
 		if(library == null) {
-			throw new Exception("Failed to find the library '" + LIBRARY_NAME + "'");
+			throw new Exception("Failed to find the library '" + ScrapMechanic.LIBRARY_NAME + "'");
 		}
 		
 		// TODO: Can we initialize the default lua types in another way?
@@ -86,8 +84,8 @@ public final class LuaUtil {
 	}
 	
 	public static boolean isLuaFunction(String name) {
-		if(name.startsWith(LIBRARY_NAME)) {
-			return functions.contains(name.substring(LIBRARY_NAME.length() + 2));
+		if(name.startsWith(ScrapMechanic.LIBRARY_NAME)) {
+			return functions.contains(name.substring(ScrapMechanic.LIBRARY_NAME.length() + 2));
 		}
 		return functions.contains(name);
 	}
@@ -173,7 +171,7 @@ public final class LuaUtil {
 			if(name.equals("pathnode")) return "PathNode";
 			if(name.equals("areatrigger")) return "AreaTrigger";
 			
-			return new StringBuilder().append(Character.toUpperCase(name.charAt(0))).append(last).toString();
+			return Character.toUpperCase(name.charAt(0)) + last;
 		}
 		
 		public int getId() {

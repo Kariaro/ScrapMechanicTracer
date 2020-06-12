@@ -19,12 +19,20 @@ import ghidra.program.model.pcode.PcodeOp;
 import ghidra.program.model.pcode.PcodeOpAST;
 import ghidra.program.model.pcode.Varnode;
 import ghidra.util.task.TaskMonitor;
+import sm.gui.SMDialog;
 
 // TODO: Remove unnecessary functions
 public class Util {
 	private static GhidraScript SCRIPT;
-	public static void init(GhidraScript ghidra) {
+	private static SMDialog DIALOG;
+	
+	public static void init(GhidraScript ghidra, SMDialog dialog) {
 		Util.SCRIPT = ghidra;
+		Util.DIALOG = dialog;
+	}
+	
+	public static boolean isRunningGhidra() {
+		return SCRIPT != null;
 	}
 	
 	public static GhidraScript getScript() {
@@ -45,6 +53,10 @@ public class Util {
 	
 	public static DataTypeManager getDataTypeManager() {
 		return getProgram().getDataTypeManager();
+	}
+	
+	public static SMDialog getDialog() {
+		return DIALOG;
 	}
 	
 	
