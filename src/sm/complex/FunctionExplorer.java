@@ -57,14 +57,14 @@ public class FunctionExplorer implements Closeable {
 		INT_DATATYPE = Util.getDataTypeManager().getDataType("/int");
 	}
 	
-	public FuzzedFunction evaluate(SMFunctionObject object) {
+	public AnalysedFunction evaluate(SMFunctionObject object) {
 		return evaluate(object.getFunction());
 	}
 	
-	public FuzzedFunction evaluate(Function function) {
+	public AnalysedFunction evaluate(Function function) {
 		if(isClosed) return null;
 		
-		FuzzedFunction fuzzed = new FuzzedFunction();
+		AnalysedFunction fuzzed = new AnalysedFunction();
 		
 		Varnode[] varnode = new Varnode[1];
 		{
@@ -101,17 +101,16 @@ public class FunctionExplorer implements Closeable {
 		}
 		
 		enterFunction(fuzzed, function.getEntryPoint(), 0, varnode);
-		//object.setFuzzedFunction(fuzzed);
 		
 		return fuzzed;
 	}
 	
-	private void enterFunction(FuzzedFunction fuzzed, Address callAddress, int depth, Varnode[] params) {
+	private void enterFunction(AnalysedFunction fuzzed, Address callAddress, int depth, Varnode[] params) {
 		if(Util.isMonitorCancelled()) return;
 
 		Function function = Util.getFunctionAt(callAddress);
 		
-		// TODO: Find a better way of checking if a function is deassembled!
+		// TODO: Find a better way of checking if a function is disassembled!
 		if(Util.getInstructionAt(callAddress) == null) {
 			DisassembleCommand command = new DisassembleCommand(callAddress, null, true);
 			command.applyTo(Util.getProgram(), Util.getMonitor());
@@ -140,14 +139,14 @@ public class FunctionExplorer implements Closeable {
 		}
 	}
 	
-	private void traverseFunction(FuzzedFunction fuzzed, HighFunction local, int depth, Varnode[] params) {
+	private void traverseFunction(AnalysedFunction fuzzed, HighFunction local, int depth, Varnode[] params) {
 		List<Instruction> instructions = getCallInstructions(local);
 		
 		for(int instIndex = 0; instIndex < instructions.size(); instIndex++) {
 			Instruction inst = instructions.get(instIndex);
 			Address instAddress = inst.getAddress();
 			
-			// TODO: What else can you get from this iterator?
+			// NOTE: What else can you get from this iterator?
 			Iterator<PcodeOpAST> iter = local.getPcodeOps(instAddress);
 			if(!iter.hasNext()) continue;
 			
@@ -206,7 +205,7 @@ public class FunctionExplorer implements Closeable {
 					if(addr.isStackAddress() && addr.getOffset() == 4) {
 						traverse = true;
 						
-						// TODO: Some decompiled code does not work if the parameter is of the wrong type
+						// INFO: Some decompiled code does not work if the parameter is of the wrong type
 						//       therefore the parameter needs to be changed to the correct type.
 						//
 						//       This is not easy because sometimes PcodeOp can smash together values in
@@ -252,7 +251,7 @@ public class FunctionExplorer implements Closeable {
 				}
 				
 				if(traverse) {
-					// TODO: Sometimes arguments are pushed into registers before being pushed to a
+					// NOTE: Sometimes arguments are pushed into registers before being pushed to a
 					//       call command. The task is to check if any of these registers point to
 					//       the current functions parameters. And if so change that value into the
 					//       last known parameter value. Otherwise it should be null.
@@ -442,7 +441,7 @@ public class FunctionExplorer implements Closeable {
 		return list;
 	}
 	
-	private boolean checkArgError(FuzzedFunction fuzzed, PcodeOpAST command, Varnode[] newParams) {
+	private boolean checkArgError(AnalysedFunction fuzzed, PcodeOpAST command, Varnode[] newParams) {
 		if(newParams.length < 3) return false;
 		
 		//System.out.println("      : len = " + newParams.length);
@@ -491,7 +490,7 @@ public class FunctionExplorer implements Closeable {
 	}
 	
 	// TODO: Failes to find argument length sometimes.
-	private boolean checkLuaError(FuzzedFunction fuzzed, PcodeOpAST command, Varnode[] newParams) {
+	private boolean checkLuaError(AnalysedFunction fuzzed, PcodeOpAST command, Varnode[] newParams) {
 		if(command.getNumInputs() < 4) return false;
 		
 		//System.out.println("Testing : " + command);
@@ -562,7 +561,7 @@ public class FunctionExplorer implements Closeable {
 		return true;
 	}
 	
-	private void processCommand(FuzzedFunction fuzzed, String name, PcodeOpAST command, Varnode[] nextParams) {
+	private void processCommand(AnalysedFunction fuzzed, String name, PcodeOpAST command, Varnode[] nextParams) {
 		switch(name) {
 			case "luaL_checkudata": {
 				if(nextParams.length < 3) break;
@@ -618,7 +617,7 @@ public class FunctionExplorer implements Closeable {
 				
 				break;
 			}
-			// TODO: Sometimes this gives false values ???????? What does this mean?
+			
 			case "luaL_checklstring": {
 				if(nextParams.length < 2) break;
 				long index = nextParams[1].getOffset();
@@ -644,7 +643,7 @@ public class FunctionExplorer implements Closeable {
 				return;
 			}
 			
-			// TODO: By using 'LuaUtil.getTypeNameFromId' this could be used to check what branches
+			// NOTE: By using 'LuaUtil.getTypeNameFromId' this could be used to check what branches
 			//       leads to a call to 'luaL_error'.
 			case "lua_type": return;
 			
@@ -653,7 +652,7 @@ public class FunctionExplorer implements Closeable {
 			case "lua_getmetatable": return; // NOTE: Sometimes this is used to create sub tables for returns and other stuff.
 			case "lua_typename": return;
 			case "lua_topointer": return;
-			case "lua_gettop": return; // NOTE: This function gets the amount of arguments on the stack
+			case "lua_gettop": return; // This function gets the amount of arguments on the stack
 			
 			default: {
 				// Do nothing

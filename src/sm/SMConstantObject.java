@@ -6,7 +6,6 @@ import java.util.HashMap;
 public class SMConstantObject implements Serializable {
 	private static final long serialVersionUID = 2926401670760278882L;
 	
-	// TODO: Implement
 	public HashMap<String, String> values;
 	
 	public String value;

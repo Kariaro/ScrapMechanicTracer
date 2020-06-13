@@ -10,6 +10,7 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.mem.Memory;
 import ghidra.program.model.mem.MemoryBlock;
 import sm.complex.ScrapMechanic;
+import sm.util.SMUtil;
 import sm.util.Util;
 
 /**
@@ -19,7 +20,7 @@ import sm.util.Util;
  * 
  * @author HardCoded
  */
-public class PointerFinder {
+public final class PointerFinder {
 	// TODO: Custom memory block searching
 	private static final String NAME_PATTERN = "[a-zA-Z0-9.]+";
 	private static final int MAX_STRUCTURE_SIZE = 256;
@@ -28,7 +29,10 @@ public class PointerFinder {
 	private static String version;
 	
 	public static void init(GhidraScript ghidra) throws Exception {
-		version = findVersionString(ScrapMechanic.STRINGS_MEMORY_BLOCK);
+		version = findVersionString(
+			ScrapMechanic.STRINGS_MEMORY_BLOCK,
+			ScrapMechanic.STRINGS_MEMORY_BLOCK
+		);
 		
 		List<StringPointer> list = new ArrayList<>();
 		findStrings(ScrapMechanic.STRINGS_MEMORY_BLOCK, list);
@@ -51,15 +55,66 @@ public class PointerFinder {
 		return structures;
 	}
 	
-	private static String findVersionString(String blockName) {
-		// TODO: Implement!
-		return null;
+	public static String getVersion() {
+		return version;
+	}
+	
+	private static String findVersionString(String stringBlock, String referenceBlock) throws Exception {
+		Address matchAddress = null;
+		{
+			MemoryBlock block = getMemoryBlock(stringBlock);
+			if(block == null) {
+				System.out.println("Failed to find memoryBlock '" + stringBlock + "'");
+				return null;
+			}
+			
+			Address blockStart = block.getStart();
+			int size = (int)block.getEnd().subtract(blockStart);
+			
+			byte[] blockBytes = new byte[size];
+			block.getBytes(blockStart, blockBytes);
+	
+			// Get all addresses to strings that start with '\0version\0'
+			List<Address> matches = new ArrayList<>();
+			findMatchingAddresses(blockBytes, "\0version\0", 1 + (int)blockStart.getOffset(), matches);
+			
+			if(matches.isEmpty()) {
+				System.out.println("Failed to find the string '\\0version\\0' in memory");
+				return null;
+			}
+			
+			matchAddress = matches.get(0);
+		}
+		
+		{
+			MemoryBlock block = getMemoryBlock(referenceBlock);
+			if(block == null) {
+				System.out.println("Failed to find memoryBlock '" + referenceBlock + "'");
+				return null;
+			}
+			
+			Address blockStart = block.getStart();
+			int size = (int)block.getEnd().subtract(blockStart);
+			
+			byte[] blockBytes = new byte[size];
+			block.getBytes(blockStart, blockBytes);
+			
+			List<Address> matches = new ArrayList<>();
+			findMatchingAddresses(blockBytes, getPattern(matchAddress), (int)blockStart.getOffset(), matches);
+			
+			//System.out.println("Version pointer: " + matchAddress);
+			//System.out.println("Version paths: " + matches);
+			
+			
+			//System.out.println("Version result: " + result);
+			return SMUtil.loadVersionString(Util.getAddressFromPointer(matches.get(0).add(4)));
+		}
 	}
 	
 	private static void findStrings(String blockName, List<StringPointer> list) throws Exception {
 		MemoryBlock block = getMemoryBlock(blockName);
 		if(block == null) {
-			System.out.println("Failed to find memoryBlock '" + block + "'");
+			System.out.println("Failed to find memoryBlock '" + blockName + "'");
 			return;
 		}
 		
@@ -90,7 +145,7 @@ public class PointerFinder {
 	private static void findReferences(String blockName, List<StringPointer> pointers, List<StringPointer> groupList) throws Exception {
 		MemoryBlock block = getMemoryBlock(blockName);
 		if(block == null) {
-			System.out.println("Failed to find memoryBlock '" + block + "'");
+			System.out.println("Failed to find memoryBlock '" + blockName + "'");
 			return;
 		}
 		

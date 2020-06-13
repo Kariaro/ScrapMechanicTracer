@@ -90,11 +90,13 @@ public class Importer {
 		}
 	}
 	
-	private static void loadDataTypes(GhidraScript ghidra) throws Exception {
+	private static boolean loadDataTypes(GhidraScript ghidra) throws Exception {
+		boolean hasChanged = false;
 		luaPath = root.getCategory("lua.h");
 		if(luaPath == null) {
 			System.out.println("Adding 'lua.h' category");
 			luaPath = root.createCategory("lua.h");
+			hasChanged = true;
 		}
 		
 		for(String[] type : FUNCTIONS) {
@@ -109,8 +111,12 @@ public class Importer {
 				DataType dataType = parser.parse(code);
 				dataType.setCategoryPath(luaPath.getCategoryPath());
 				luaPath.addDataType(dataType, DataTypeConflictHandler.DEFAULT_HANDLER);
+				
+				hasChanged = true;
 			}
 		}
+		
+		return hasChanged;
 	}
 	
 	private static final String[][] SIGNATURES = {
@@ -189,7 +195,9 @@ public class Importer {
 		{ "luaopen_string",			"int luaopen_string (lua_State* L);" },
 		{ "luaopen_table",			"int luaopen_table (lua_State* L);" },
 	};
-	private static void loadFunctionSignatures(GhidraScript ghidra) throws Exception {
+	private static boolean loadFunctionSignatures(GhidraScript ghidra) throws Exception {
+		boolean hasChanged = false;
+		
 		Program program = ghidra.getCurrentProgram();
 		SymbolTable table = program.getSymbolTable();
 		
@@ -214,6 +222,8 @@ public class Importer {
 			
 			if(shouldUpdate) {
 				System.out.println("Changing function signature '" + symbol.getName() + "' -> '" + data[1] + "'");
+				hasChanged = true;
+				
 				ApplyFunctionSignatureCmd cmd = new ApplyFunctionSignatureCmd(
 					symbol.getAddress(),
 					signature,
@@ -235,6 +245,8 @@ public class Importer {
 				}
 			}
 		}
+		
+		return hasChanged;
 	}
 	
 	/**

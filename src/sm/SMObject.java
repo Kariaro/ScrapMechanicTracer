@@ -152,23 +152,4 @@ public class SMObject implements Serializable {
 			.append("}")
 		.toString();	
 	}
-	/*
-	@Override
-	public String toString() {
-		return new StringBuilder()
-			.append("SMObject {\n")
-			.append("  func = ").append(loadFunctionAddress).append("\n\n")
-			
-			.append("    userdata = ").append(userdataAddress).append("\n")
-			.append("    hidden = ").append(hiddenAddress).append("\n")
-			.append("    type = ").append(typeAddress).append("\n\n")
-			
-			.append("    name = ").append(nameAddress).append("\n")
-			.append("    table = ").append(tableAddress).append("\n\n")
-			
-			.append("    constant = ").append(constantAddress).append("\n")
-			.append("}")
-		.toString();	
-	}
-	*/
 }

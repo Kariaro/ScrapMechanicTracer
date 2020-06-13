@@ -43,20 +43,23 @@ public class SMDialog extends JFrame {
 	private static final long serialVersionUID = 8516907091837622595L;
 	
 	private GhidraFileChooser fileChooser;
-	private JComboBox<String> comboBox_stringsMemory;
-	private JComboBox<String> comboBox_referencesMemory;
-	private JComboBox<String> comboBox_threads;
-	private JComboBox<String> comboBox_exploreDepth;
+	private JComboBox<String> comboBoxStringsMemory;
+	private JComboBox<String> comboBoxPointersMemory;
+	private JComboBox<String> comboBoxThreads;
+	private JComboBox<String> comboBoxExploreDepth;
+	private JSpinner spinnerTimeout;
 	private JProgressBar progressBar;
-	private JSpinner spinner;
+	private JTextField filePathField;
 	
 	private JButton btnNewButton;
 	private JButton btnStopFuzzing;
+	private JButton btnBrowserPath;
+	private JButton btnResetSettings;
 	
-	private transient Runnable fuzzingListener;
+	private transient Runnable analysisListener;
 	
 	public SMDialog(GhidraScript ghidra) {
-		setMinimumSize(new Dimension(360, 166));
+		setMinimumSize(new Dimension(450, 166));
 		setIconImage(Toolkit.getDefaultToolkit().getImage(SMDialog.class.getResource("/images/greenDragon16.png")));
 		String[] memoryComboBoxValues = new String[] { "Search All" };
 		
@@ -84,7 +87,8 @@ public class SMDialog extends JFrame {
 			}
 		}
 		
-		setTitle("ScrapMechanic Fuzzing Functions");
+		setTitle("ScrapMechanic Lua Analyser");
+		setName("sm.gui.SMDialog");
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		
 		setBounds(100, 100, 645, 353);
@@ -98,28 +102,25 @@ public class SMDialog extends JFrame {
 		contentPane.add(panel_3, BorderLayout.SOUTH);
 		panel_3.setLayout(new BoxLayout(panel_3, BoxLayout.X_AXIS));
 		
-		btnNewButton = new JButton("Start Fuzzing");
+		btnNewButton = new JButton("Start Analysis");
 		btnNewButton.setEnabled(ghidra != null);
 		btnNewButton.setFocusable(false);
 		panel_3.add(btnNewButton);
 		
-		btnStopFuzzing = new JButton("Stop Fuzzing");
+		btnStopFuzzing = new JButton("Stop Analysis");
 		btnStopFuzzing.setEnabled(false);
 		btnStopFuzzing.setFocusable(false);
 		panel_3.add(btnStopFuzzing);
 		btnNewButton.addActionListener((event) -> {
-			if(fuzzingListener != null) {
-				btnNewButton.setEnabled(false);
-				btnStopFuzzing.setEnabled(true);
-				
-				Util.getMonitor().clearCanceled();
-				Thread thread = new Thread(fuzzingListener);
-				thread.start();
-			}
+			if(analysisListener != null) startFuzzing();
 		});
 		btnStopFuzzing.addActionListener((event) -> {
 			if(Util.isRunningGhidra()) Util.getMonitor().cancel();
 		});
+		
+		btnResetSettings = new JButton("Reset Settings");
+		btnResetSettings.setEnabled(false);
+		panel_3.add(btnResetSettings);
 		
 		Component horizontalStrut = Box.createHorizontalStrut(10);
 		panel_3.add(horizontalStrut);
@@ -180,21 +181,19 @@ public class SMDialog extends JFrame {
 		gbc_horizontalStrut_2.gridy = 0;
 		panel_5.add(horizontalStrut_2, gbc_horizontalStrut_2);
 		
-		comboBox_threads = new JComboBox<>();
-		comboBox_threads.setFocusable(false);
-		comboBox_threads.setModel(new DefaultComboBoxModel<String>(threadValues));
-		comboBox_threads.setSelectedItem(
-			CacheUtil.getProperty("decompiler.threads", threadValues[threadValues.length - 1])
-		);
-		comboBox_threads.addActionListener((event) -> {
-			CacheUtil.setProperty("decompiler.threads", comboBox_threads.getSelectedItem());
+		comboBoxThreads = new JComboBox<>();
+		comboBoxThreads.setFocusable(false);
+		comboBoxThreads.setModel(new DefaultComboBoxModel<String>(threadValues));
+		comboBoxThreads.addActionListener((event) -> {
+			CacheUtil.setProperty("decompiler.threads", comboBoxThreads.getSelectedItem());
+			updateSettings();
 		});
 		GridBagConstraints gbc_textField = new GridBagConstraints();
 		gbc_textField.insets = new Insets(0, 0, 5, 0);
 		gbc_textField.fill = GridBagConstraints.HORIZONTAL;
 		gbc_textField.gridx = 2;
 		gbc_textField.gridy = 0;
-		panel_5.add(comboBox_threads, gbc_textField);
+		panel_5.add(comboBoxThreads, gbc_textField);
 		
 		JLabel lblDecompileTimeout = new JLabel("Decompile Timeout");
 		lblDecompileTimeout.setToolTipText("The maximum amount of seconds that the decompiler is allowed to run on a task.Maximum 240 seconds");
@@ -207,21 +206,21 @@ public class SMDialog extends JFrame {
 		gbc_lblDecompileTimeout.gridy = 1;
 		panel_5.add(lblDecompileTimeout, gbc_lblDecompileTimeout);
 		
-		spinner = new JSpinner();
-		spinner.setRequestFocusEnabled(false);
-		spinner.setFocusTraversalKeysEnabled(false);
-		spinner.setFocusable(false);
-		spinner.setModel(new SpinnerNumberModel(10, 5, 240, 5));
-		spinner.setValue(CacheUtil.getProperty("decompiler.timeout", "10", Integer::valueOf));
-		spinner.addChangeListener((event) -> {
-			CacheUtil.setProperty("decompiler.timeout", spinner.getValue());
+		spinnerTimeout = new JSpinner();
+		spinnerTimeout.setRequestFocusEnabled(false);
+		spinnerTimeout.setFocusTraversalKeysEnabled(false);
+		spinnerTimeout.setFocusable(false);
+		spinnerTimeout.setModel(new SpinnerNumberModel(10, 5, 240, 5));
+		spinnerTimeout.addChangeListener((event) -> {
+			CacheUtil.setProperty("decompiler.timeout", spinnerTimeout.getValue());
+			updateSettings();
 		});
 		GridBagConstraints gbc_spinner = new GridBagConstraints();
 		gbc_spinner.fill = GridBagConstraints.HORIZONTAL;
 		gbc_spinner.insets = new Insets(0, 0, 5, 0);
 		gbc_spinner.gridx = 2;
 		gbc_spinner.gridy = 1;
-		panel_5.add(spinner, gbc_spinner);
+		panel_5.add(spinnerTimeout, gbc_spinner);
 		
 		JLabel lblNewLabel_4 = new JLabel("Maximum Search Depth");
 		lblNewLabel_4.setToolTipText("The maximum depth the ScrapMechanicFuzzer can search for lua information");
@@ -232,18 +231,18 @@ public class SMDialog extends JFrame {
 		gbc_lblNewLabel_4.gridy = 2;
 		panel_5.add(lblNewLabel_4, gbc_lblNewLabel_4);
 		
-		comboBox_exploreDepth = new JComboBox<>();
-		comboBox_exploreDepth.setFocusable(false);
-		comboBox_exploreDepth.setModel(new DefaultComboBoxModel<>(new String[] { "1", "2", "3", "4", "5" }));
-		comboBox_exploreDepth.setSelectedItem(CacheUtil.getProperty("decompiler.maxDepth", "3"));
-		comboBox_exploreDepth.addActionListener((event) -> {
-			CacheUtil.setProperty("decompiler.maxDepth", comboBox_exploreDepth.getSelectedItem());
+		comboBoxExploreDepth = new JComboBox<>();
+		comboBoxExploreDepth.setFocusable(false);
+		comboBoxExploreDepth.setModel(new DefaultComboBoxModel<>(new String[] { "1", "2", "3", "4", "5" }));
+		comboBoxExploreDepth.addActionListener((event) -> {
+			CacheUtil.setProperty("decompiler.maxDepth", comboBoxExploreDepth.getSelectedItem());
+			updateSettings();
 		});
 		GridBagConstraints gbc_comboBox_3 = new GridBagConstraints();
 		gbc_comboBox_3.fill = GridBagConstraints.HORIZONTAL;
 		gbc_comboBox_3.gridx = 2;
 		gbc_comboBox_3.gridy = 2;
-		panel_5.add(comboBox_exploreDepth, gbc_comboBox_3);
+		panel_5.add(comboBoxExploreDepth, gbc_comboBox_3);
 		
 		JPanel panel_4 = new JPanel();
 		panel_4.setBorder(new TitledBorder(null, "Data options", TitledBorder.LEADING, TitledBorder.TOP, null, null));
@@ -277,20 +276,20 @@ public class SMDialog extends JFrame {
 		gbc_horizontalStrut_1.gridy = 0;
 		panel.add(horizontalStrut_1, gbc_horizontalStrut_1);
 		
-		comboBox_stringsMemory = new JComboBox<>();
-		comboBox_stringsMemory.setModel(new DefaultComboBoxModel<>(memoryComboBoxValues));
-		comboBox_stringsMemory.setSelectedItem(CacheUtil.getProperty("strings.memoryblock", ".rdata"));
-		comboBox_stringsMemory.addActionListener((event) -> {
-			CacheUtil.setProperty("strings.memoryblock", comboBox_stringsMemory.getSelectedItem());
+		comboBoxStringsMemory = new JComboBox<>();
+		comboBoxStringsMemory.setModel(new DefaultComboBoxModel<>(memoryComboBoxValues));
+		comboBoxStringsMemory.addActionListener((event) -> {
+			CacheUtil.setProperty("strings.memoryblock", comboBoxStringsMemory.getSelectedItem());
+			updateSettings();
 		});
-		lblNewLabel.setLabelFor(comboBox_stringsMemory);
-		comboBox_stringsMemory.setFocusable(false);
+		lblNewLabel.setLabelFor(comboBoxStringsMemory);
+		comboBoxStringsMemory.setFocusable(false);
 		GridBagConstraints gbc_comboBox = new GridBagConstraints();
 		gbc_comboBox.insets = new Insets(0, 0, 5, 0);
 		gbc_comboBox.fill = GridBagConstraints.HORIZONTAL;
 		gbc_comboBox.gridx = 2;
 		gbc_comboBox.gridy = 0;
-		panel.add(comboBox_stringsMemory, gbc_comboBox);
+		panel.add(comboBoxStringsMemory, gbc_comboBox);
 		
 		JLabel lblNewLabel_1 = new JLabel("References Memory Region");
 		lblNewLabel_1.setToolTipText("The memory region that points to the ScrapMechanic luaL_Reg structure pointers");
@@ -301,20 +300,20 @@ public class SMDialog extends JFrame {
 		gbc_lblNewLabel_1.gridy = 1;
 		panel.add(lblNewLabel_1, gbc_lblNewLabel_1);
 		
-		comboBox_referencesMemory = new JComboBox<>();
-		comboBox_referencesMemory.setModel(new DefaultComboBoxModel<>(memoryComboBoxValues));
-		comboBox_referencesMemory.setSelectedItem(CacheUtil.getProperty("pointers.memoryblock", ".data"));
-		comboBox_referencesMemory.addActionListener((event) -> {
-			CacheUtil.setProperty("pointers.memoryblock", comboBox_referencesMemory.getSelectedItem());
+		comboBoxPointersMemory = new JComboBox<>();
+		comboBoxPointersMemory.setModel(new DefaultComboBoxModel<>(memoryComboBoxValues));
+		comboBoxPointersMemory.addActionListener((event) -> {
+			CacheUtil.setProperty("pointers.memoryblock", comboBoxPointersMemory.getSelectedItem());
+			updateSettings();
 		});
-		lblNewLabel_1.setLabelFor(comboBox_referencesMemory);
-		comboBox_referencesMemory.setFocusable(false);
+		lblNewLabel_1.setLabelFor(comboBoxPointersMemory);
+		comboBoxPointersMemory.setFocusable(false);
 		GridBagConstraints gbc_comboBox_1 = new GridBagConstraints();
 		gbc_comboBox_1.fill = GridBagConstraints.HORIZONTAL;
 		gbc_comboBox_1.insets = new Insets(0, 0, 5, 0);
 		gbc_comboBox_1.gridx = 2;
 		gbc_comboBox_1.gridy = 1;
-		panel.add(comboBox_referencesMemory, gbc_comboBox_1);
+		panel.add(comboBoxPointersMemory, gbc_comboBox_1);
 		
 		JLabel lblNewLabel_2 = new JLabel("Trace Save Path");
 		lblNewLabel_2.setToolTipText("The save path of the trace");
@@ -336,7 +335,7 @@ public class SMDialog extends JFrame {
 		panel.add(panel_2, gbc_panel_2);
 		panel_2.setLayout(new BoxLayout(panel_2, BoxLayout.X_AXIS));
 		
-		JTextField filePathField = new JTextField();
+		filePathField = new JTextField();
 		filePathField.setMinimumSize(new Dimension(6, 21));
 		filePathField.setMaximumSize(new Dimension(2147483647, 21));
 		filePathField.setDisabledTextColor(Color.WHITE);
@@ -352,10 +351,10 @@ public class SMDialog extends JFrame {
 		fileChooser.setFileSelectionMode(GhidraFileChooserMode.DIRECTORIES_ONLY);
 		fileChooser.setCurrentDirectory(CacheUtil.getTracePath().getParentFile());
 		
-		JButton btnNewButton_1 = new JButton("Browser");
-		btnNewButton_1.setHorizontalAlignment(SwingConstants.LEADING);
-		btnNewButton_1.setAlignmentX(Component.RIGHT_ALIGNMENT);
-		btnNewButton_1.addActionListener(new ActionListener() {
+		btnBrowserPath = new JButton("Browser");
+		btnBrowserPath.setHorizontalAlignment(SwingConstants.LEADING);
+		btnBrowserPath.setAlignmentX(Component.RIGHT_ALIGNMENT);
+		btnBrowserPath.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if(fileChooser.isShowing()) return;
 				fileChooser.setCurrentDirectory(CacheUtil.getTracePath().getParentFile());
@@ -364,12 +363,13 @@ public class SMDialog extends JFrame {
 				if(file != null) {
 					filePathField.setText(file.getAbsolutePath());
 					CacheUtil.setProperty("traces.path", file.getAbsolutePath());
+					updateSettings();
 					fileChooser.close();
 				}
 			}
 		});
-		btnNewButton_1.setFocusable(false);
-		panel_2.add(btnNewButton_1);
+		btnBrowserPath.setFocusable(false);
+		panel_2.add(btnBrowserPath);
 		
 		Component horizontalStrut_3 = Box.createHorizontalStrut(-1);
 		panel_2.add(horizontalStrut_3);
@@ -385,21 +385,29 @@ public class SMDialog extends JFrame {
 			@Override
 			public void windowClosed(WindowEvent e) {
 				CacheUtil.setProperty("traces.path", filePathField.getText());
-				CacheUtil.setProperty("pointers.memoryblock", comboBox_referencesMemory.getSelectedItem());
-				CacheUtil.setProperty("strings.memoryblock", comboBox_stringsMemory.getSelectedItem());
-				CacheUtil.setProperty("decompiler.threads", comboBox_threads.getSelectedItem());
-				CacheUtil.setProperty("decompiler.timeout", spinner.getValue());
-				CacheUtil.setProperty("decompiler.maxDepth", comboBox_exploreDepth.getSelectedItem());
+				CacheUtil.setProperty("pointers.memoryblock", comboBoxPointersMemory.getSelectedItem());
+				CacheUtil.setProperty("strings.memoryblock", comboBoxStringsMemory.getSelectedItem());
+				CacheUtil.setProperty("decompiler.threads", comboBoxThreads.getSelectedItem());
+				CacheUtil.setProperty("decompiler.timeout", spinnerTimeout.getValue());
+				CacheUtil.setProperty("decompiler.maxDepth", comboBoxExploreDepth.getSelectedItem());
 			}
 		});
+		
+		btnResetSettings.addActionListener((event) -> {
+			CacheUtil.resetProperties();
+			initValues();
+			updateSettings();
+		});
+		
+		initValues();
 	}
 	
 	public void start() {
 		setVisible(true);
 	}
 	
-	public void setStartFuzzingListener(Runnable runnable) {
-		fuzzingListener = runnable;
+	public void setStartAnalysisListener(Runnable runnable) {
+		analysisListener = runnable;
 	}
 	
 	public void setMaximumProgress(int maximum) {
@@ -419,7 +427,54 @@ public class SMDialog extends JFrame {
 	
 	public void stopFuzzing() {
 		btnNewButton.setEnabled(true);
+		btnBrowserPath.setEnabled(true);
 		btnStopFuzzing.setEnabled(false);
+		updateSettings();
+		
+		comboBoxStringsMemory.setEnabled(true);
+		comboBoxPointersMemory.setEnabled(true);
+		comboBoxThreads.setEnabled(true);
+		comboBoxExploreDepth.setEnabled(true);
+		spinnerTimeout.setEnabled(true);
+		
 		progressBar.setString(progressBar.getString() + " [CLOSED]");
+	}
+	
+	private void initValues() {
+		comboBoxPointersMemory.setSelectedItem(CacheUtil.getProperty("pointers.memoryblock", ".data"));
+		comboBoxStringsMemory.setSelectedItem(CacheUtil.getProperty("strings.memoryblock", ".rdata"));
+		comboBoxExploreDepth.setSelectedItem(CacheUtil.getProperty("decompiler.maxDepth", "3"));
+		spinnerTimeout.setValue(CacheUtil.getProperty("decompiler.timeout", "10", Integer::valueOf));
+		comboBoxThreads.setSelectedItem(CacheUtil.getProperty("decompiler.threads", Runtime.getRuntime().availableProcessors() - 1));
+		filePathField.setText(CacheUtil.getProperty("traces.path", CacheUtil.getDefaultTracePath()));
+	}
+	
+	private void startFuzzing() {
+		btnNewButton.setEnabled(false);
+		btnBrowserPath.setEnabled(false);
+		btnStopFuzzing.setEnabled(true);
+		btnResetSettings.setEnabled(false);
+		
+		comboBoxStringsMemory.setEnabled(false);
+		comboBoxPointersMemory.setEnabled(false);
+		comboBoxThreads.setEnabled(false);
+		comboBoxExploreDepth.setEnabled(false);
+		spinnerTimeout.setEnabled(false);
+		
+		
+		Util.getMonitor().clearCanceled();
+		Thread thread = new Thread(analysisListener);
+		thread.start();
+	}
+	
+	private void updateSettings() {
+		btnResetSettings.setEnabled(
+			   !CacheUtil.checkProperty("traces.path", CacheUtil.getDefaultTracePath())
+			|| !CacheUtil.checkProperty("pointers.memoryblock", ".data")
+			|| !CacheUtil.checkProperty("strings.memoryblock", ".rdata")
+			|| !CacheUtil.checkProperty("decompiler.threads", Runtime.getRuntime().availableProcessors() - 1)
+			|| !CacheUtil.checkProperty("decompiler.timeout", 10)
+			|| !CacheUtil.checkProperty("decompiler.maxDepth", 3)
+		);
 	}
 }

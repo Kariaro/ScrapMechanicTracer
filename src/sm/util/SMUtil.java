@@ -18,13 +18,12 @@ public class SMUtil {
 	// TODO: Run DecompilerParameterIdCmd on only the selected
 	//       script functions with an iterated depth of 'x'
 	
-	// TODO: Cache this class.
 	public static SMObject loadSMObject(LuaReg reg) throws MemoryAccessException {
 		Address entry = Util.getAddress(reg.func);
 		Instruction iter = Util.getInstructionAt(entry);
 		
 		if(iter == null) {
-			// TODO: Check it it needs to be decompiled...
+			// TODO: Check if it needs to be decompiled...
 			//AutoAnalysisManager mgr = AutoAnalysisManager.getAnalysisManager(Util.getProgram());
 			//mgr.disassemble(entry);
 			
@@ -91,25 +90,76 @@ public class SMUtil {
 		return object;
 	}
 	
-	/*
-	static class BasicDecompileConfigurer implements DecompileConfigurer {
-		private Program program;
-
-		public BasicDecompileConfigurer(Program program) {
-			this.program = program;
-		}
-
-		public void configure(DecompInterface decomp) {
-			decomp.setSimplificationStyle("decompile");
-			decomp.toggleSyntaxTree(true);
-			decomp.toggleCCode(true);
+	public static String loadVersionString(Address entry) throws MemoryAccessException {
+		Instruction iter = Util.getInstructionAt(entry);
+		
+		if(iter == null) {
+			// TODO: Check if it needs to be decompiled...
+			//AutoAnalysisManager mgr = AutoAnalysisManager.getAnalysisManager(Util.getProgram());
+			//mgr.disassemble(entry);
 			
-			DecompileOptions opts = new DecompileOptions();
-			opts.grabFromProgram(program);
-			decomp.setOptions(opts);
+			DisassembleCommand command = new DisassembleCommand(entry, null, true);
+			command.applyTo(Util.getProgram(), Util.getMonitor());
+			
+			iter = Util.getInstructionAt(entry);
 		}
+		
+		Function func = Util.getFunctionAt(entry);
+		List<Instruction> list = new ArrayList<>();
+		
+		int length = Util.getFunctionLength(func);
+		
+		String version = null;
+		String buildVersion = null;
+		
+		boolean skipNext = false;
+		do {
+			iter = iter.getNext();
+			
+			Address addr = iter.getAddress();
+			if(Util.getOffset(func, addr) > length) break;
+			
+			String mnemonic = iter.getMnemonicString();
+			
+			if(Byte.toUnsignedInt(iter.getByte(0)) == 0xba && buildVersion == null) {
+				buildVersion = Integer.toString(iter.getInt(1));
+				// System.out.println("BuildVersion: " + buildVersion);
+				skipNext = true;
+			}
+			
+			if(PUSH.equals(mnemonic)) {
+				list.add(iter);
+			} else {
+				if(CALL.equals(mnemonic)) {
+					if(skipNext) {
+						skipNext = false;
+						list.clear();
+						continue;
+					}
+					
+					// System.out.println(addr + ", " + iter);
+					
+					for(Instruction inst : list) {
+						Address address = getAddress(inst);
+						
+						if(Util.isValidAddress(address)) {
+							// System.out.println("    addr = " + address);
+							version = Util.readTerminatedString(address);
+							break;
+						}
+					}
+					
+					// System.out.println("List: " + list);
+					list.clear();
+					break;
+				}
+				
+			}
+		} while(iter != null);
+		list.clear();
+		
+		return version + '.' + buildVersion;
 	}
-	*/
 	
 	private static Address getAddress(Instruction inst) {
 		String string = inst.toString();

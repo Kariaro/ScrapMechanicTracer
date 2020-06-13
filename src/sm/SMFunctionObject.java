@@ -1,8 +1,9 @@
 package sm;
+
 import java.io.Serializable;
 
 import ghidra.program.model.listing.Function;
-import sm.complex.FuzzedFunction;
+import sm.complex.AnalysedFunction;
 import sm.complex.ScrapMechanic;
 import sm.util.LuaReg;
 import sm.util.Util;
@@ -20,7 +21,7 @@ public class SMFunctionObject implements Serializable {
 	 * This object will contain the data found by exploring
 	 * the functions. This data can be serialized.
 	 */
-	private FuzzedFunction fuzzed;
+	private AnalysedFunction analysedFunction;
 	
 	public SMFunctionObject(LuaReg reg, boolean local) {
 		this.functionAddress = reg.func;
@@ -46,24 +47,23 @@ public class SMFunctionObject implements Serializable {
 	 * 
 	 * @return The decompiled version of this function
 	 */
-	public FuzzedFunction getFuzzedFunction() {
-		return fuzzed;
+	public AnalysedFunction getFuzzedFunction() {
+		return analysedFunction;
 	}
 	
-	public void setFuzzedFunction(FuzzedFunction fuzzed) {
-		this.fuzzed = fuzzed;
+	public void setAnalysedFunction(AnalysedFunction function) {
+		this.analysedFunction = function;
 	}
 	
 	// TODO: Show more information about what errors this function has
 	//       'Sandbox Violation' client/server
-	//       ...
 	//
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		if(ScrapMechanic.SHOW_ADDRESS) sb.append(functionAddress).append(" -> ");
-		if(fuzzed != null) {
-			if(fuzzed.isRemoved()) {
+		if(analysedFunction != null) {
+			if(analysedFunction.isRemoved()) {
 				sb.append("[REMOVED] ");
 			}
 		}
@@ -71,14 +71,14 @@ public class SMFunctionObject implements Serializable {
 		sb.append(local ? "[userdata] ":"function ")
 		  .append(name);
 		
-		if(fuzzed != null) {
-			if(!fuzzed.isRemoved()) {
-				sb.append(fuzzed.toString());
+		if(analysedFunction != null) {
+			if(!analysedFunction.isRemoved()) {
+				sb.append(analysedFunction.toString());
 			} else {
 				sb.append("( )");
 			}
 		} else {
-			sb.append("( Fuzzed is NULL )");
+			sb.append("( Function was not analysed )");
 		}
 		
 		return sb.toString();

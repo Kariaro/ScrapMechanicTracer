@@ -170,6 +170,7 @@ public final class LuaUtil {
 			if(name.equals("aistate")) return "AiState";
 			if(name.equals("pathnode")) return "PathNode";
 			if(name.equals("areatrigger")) return "AreaTrigger";
+			if(name.equals("raycastresult")) return "RaycastResult";
 			
 			return Character.toUpperCase(name.charAt(0)) + last;
 		}

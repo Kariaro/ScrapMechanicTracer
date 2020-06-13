@@ -6,6 +6,8 @@
 // @toolbar 
 
 import ghidra.app.script.GhidraScript;
+import ghidra.program.model.data.DataTypeManager;
+import ghidra.program.model.listing.Program;
 import sm.complex.ScrapMechanic;
 import sm.gui.SMDialog;
 import sm.importer.Importer;
@@ -32,6 +34,15 @@ public class ScrapMechanicTracer extends GhidraScript {
 	// NOTE: ??? Does it need to analyse 'Function ID'
 	
 	public void run() throws Exception {
+		for(java.awt.Frame frame : java.awt.Frame.getFrames()) {
+			if(frame.getClass().getName().equals(SMDialog.class.getName()) && frame.isDisplayable()) {
+				// We shouldnt create a new window if we already have one.
+				// Just request focus and put the window ontop.
+				frame.requestFocus();
+				return;
+			}
+		}
+		
 		DevUtil.replacePrintStreams(this);
 		DevUtil.replaceGhidraBin(this);
 		
@@ -43,20 +54,26 @@ public class ScrapMechanicTracer extends GhidraScript {
 		Util.init(this, dialog);
 		
 		dialog.start();
-		dialog.setStartFuzzingListener(new Runnable() {
+		dialog.setStartAnalysisListener(new Runnable() {
 			@Override
 			public void run() {
 				try {
 					start();
 				} catch(Exception e) {
 					e.printStackTrace();
+					
+					// NOTE: Fallback stop if something thows an exception
+					Util.getDialog().stopFuzzing();
+					// Util.getDialog().dispose();
 				}
-				
-				// TODO: Fallback stop if something threw a exception
-				// Util.getDialog().stopFuzzing();
 			}
 			
 			public void start() throws Exception {
+				DataTypeManager manager = Util.getDataTypeManager();
+				int transactionId = manager.startTransaction("Importer add lua types");
+				
+				// TODO: Should we call these functions everytime we press startFuzzing???
+				
 				// Initialize all imports
 				Importer.init(ScrapMechanicTracer.this);
 				
@@ -85,6 +102,9 @@ public class ScrapMechanicTracer extends GhidraScript {
 				
 				long ellapsed = System.currentTimeMillis() - start;
 				println("Time ellapsed: " + ellapsed + " ms");
+				
+				// TODO: Only update if needed
+				manager.endTransaction(transactionId, true);
 			}
 		});
 	}

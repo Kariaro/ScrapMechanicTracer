@@ -17,25 +17,33 @@ import sm.SMContainer;
  * 
  * @author HardCoded
  */
-public class CacheUtil {
-	private static File tracePath;
+public final class CacheUtil {
+	private static File defaultTracePath;
 	private static File cachePath;
 	private static File propertiesFile;
 	private static Properties properties;
 	
-	public static final File getCachePath() {
+	public static File getCachePath() {
 		return cachePath;
 	}
 	
-	public static final File getTracePath() {
-		return tracePath;
+	public static File getTracePath() {
+		return new File(getProperty("traces.path", defaultTracePath.getAbsolutePath()));
 	}
 	
-	public static final String getProperty(String key) {
+	public static File getDefaultTracePath() {
+		return defaultTracePath;
+	}
+	
+	public static String getProperty(String key) {
 		return properties.getProperty(key);
 	}
 	
-	public static final String getProperty(String key, String def) {
+	public static boolean checkProperty(String path, Object value) {
+		return value.toString().equals(getProperty(path));
+	}
+	
+	public static String getProperty(String key, Object def) {
 		if(!properties.containsKey(key)) {
 			setProperty(key, def);
 		}
@@ -43,7 +51,7 @@ public class CacheUtil {
 		return properties.getProperty(key);
 	}
 	
-	public static final <T> T getProperty(String key, String def, Function<String,T> obj) {
+	public static <T> T getProperty(String key, Object def, Function<String,T> obj) {
 		if(!properties.containsKey(key)) {
 			setProperty(key, def);
 		}
@@ -51,7 +59,7 @@ public class CacheUtil {
 		return obj.apply(properties.getProperty(key));
 	}
 	
-	public static final void setProperty(String key, Object value) {
+	public static void setProperty(String key, Object value) {
 		properties.setProperty(key, value.toString());
 		
 		try {
@@ -75,23 +83,36 @@ public class CacheUtil {
 			saveProperties();
 		}
 		
-		String path = properties.getProperty(
-			"traces.path",
-			new File(userHome, "ScrapMechanicTracer/traces").getAbsolutePath()
-		);
-		
-		tracePath = new File(path);//userHome, "ScrapMechanicTracer/traces");
-		if(!tracePath.exists()) tracePath.mkdirs();
+		defaultTracePath = new File(userHome, "ScrapMechanicTracer/traces");
+		if(!defaultTracePath.exists()) defaultTracePath.mkdirs();
 		
 		FileInputStream stream = new FileInputStream(propertiesFile);
 		properties.load(stream);
 		stream.close();
+		
+		String path = getProperty("traces.path", defaultTracePath.getAbsolutePath());
+		
+		File tracePath = new File(path);
+		if(!tracePath.exists()) {
+			System.err.println("The directory '" + path + "' does not exist. Reseting path to default");
+			properties.setProperty("traces.path", defaultTracePath.getAbsolutePath());
+		}
 	}
 	
 	private static void saveProperties() throws Exception {
 		FileOutputStream stream = new FileOutputStream(propertiesFile);
 		properties.store(stream, "Saved from CacheUtil.java");
 		stream.close();
+	}
+	
+	public static void resetProperties() {
+		properties.clear();
+		
+		try {
+			saveProperties();
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public static SMContainer load(String name) {

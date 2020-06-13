@@ -10,7 +10,7 @@ import java.util.Set;
 
 import sm.util.LuaUtil;
 
-public class FuzzedFunction implements Serializable {
+public class AnalysedFunction implements Serializable {
 	private static final long serialVersionUID = 7851898282272717995L;
 	
 	private Map<Long, HashSet<LuaUtil.Type>> values;
@@ -18,7 +18,7 @@ public class FuzzedFunction implements Serializable {
 	public int maximumArguments = Integer.MAX_VALUE;
 	public List<String> errors;
 	
-	public FuzzedFunction() {
+	public AnalysedFunction() {
 		errors = new ArrayList<>();
 		values = new HashMap<>();
 	}
@@ -104,45 +104,6 @@ public class FuzzedFunction implements Serializable {
 			sb.append(" min:").append(minArgsStr).append(" ")
 			  .append("max:").append(maxArgsStr);
 		}
-		
-		return sb.toString();
-	}
-	
-	public String toStringDebug() {
-		StringBuilder sb = new StringBuilder().append(" { ");
-
-		String minArgsStr = (minimumArguments == Integer.MIN_VALUE) ? "???":String.valueOf(minimumArguments);
-		String maxArgsStr = (maximumArguments == Integer.MAX_VALUE) ? "???":String.valueOf(maximumArguments);
-		if(minArgsStr.equals(maxArgsStr)) {
-			sb.append("args:").append(minArgsStr).append(" [\n");
-		} else {
-			sb.append("min:").append(minArgsStr).append(" ")
-			  .append("max:").append(maxArgsStr).append(" [\n");
-			
-		}
-		
-		for(Long index : values.keySet()) {
-			if(minimumArguments != Integer.MIN_VALUE) {
-				if(index < 0) continue;
-			}
-			
-			sb.append(index).append(": ");
-			Set<LuaUtil.Type> types = values.get(index);
-			for(LuaUtil.Type type : types) {
-				sb.append(type).append(", ");
-			}
-			sb.append("\n");
-		}
-		
-		sb.append("]");
-		if(!errors.isEmpty()) {
-			sb.append("\n\"Errors\": [\n");
-			for(String error : errors) {
-				sb.append("    \"").append(error).append("\",\n");
-			}
-			sb.append("]");
-		}
-		sb.append("}");
 		
 		return sb.toString();
 	}

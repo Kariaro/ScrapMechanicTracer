@@ -94,18 +94,11 @@ public class SMClassObject implements Serializable {
 			return false;
 		}
 		
-		//System.out.println("PT: " + path + ", NM: " + name);
-		//System.out.println("  : " + path.substring(0, index));
-		//String thisPath = name.substring(name.lastIndexOf('.') + 1);
-		//return path.startsWith(thisPath);
-		
 		return name.equals(path.substring(0, index));
 	}
 	
 	protected SMClassObject addClassFull(String fullPath, String path) {
-		//System.out.println("SMClassObject: addClassFull  '" + fullPath + "' -> path = " + path);
 		path = path.substring(name.length() + 1);
-		//System.out.println("   path: " + path);
 		
 		if(path.indexOf('.') != -1) {
 			for(SMClassObject clazz : classes) {
