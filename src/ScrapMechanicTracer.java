@@ -7,7 +7,6 @@
 
 import ghidra.app.script.GhidraScript;
 import ghidra.program.model.data.DataTypeManager;
-import ghidra.program.model.listing.Program;
 import sm.complex.ScrapMechanic;
 import sm.gui.SMDialog;
 import sm.importer.Importer;
@@ -57,22 +56,30 @@ public class ScrapMechanicTracer extends GhidraScript {
 		dialog.setStartAnalysisListener(new Runnable() {
 			@Override
 			public void run() {
+				DataTypeManager manager = Util.getDataTypeManager();
+				int transactionId = manager.startTransaction("ScrapMechanicTracer");
+				
 				try {
 					start();
+					
+					// TODO: Only update if needed
+					manager.endTransaction(transactionId, true);
 				} catch(Exception e) {
 					e.printStackTrace();
 					
 					// NOTE: Fallback stop if something thows an exception
 					Util.getDialog().stopFuzzing();
+					Util.getDialog().setVisible(false);
+					Util.getDialog().dispose();
+					Util.getMonitor().clearCanceled();
 					// Util.getDialog().dispose();
+					
+					manager.endTransaction(transactionId, true);
 				}
 			}
 			
 			public void start() throws Exception {
-				DataTypeManager manager = Util.getDataTypeManager();
-				int transactionId = manager.startTransaction("Importer add lua types");
-				
-				// TODO: Should we call these functions everytime we press startFuzzing???
+				// TODO: Should we call these functions everytime we press 'Start Analysing' ???
 				
 				// Initialize all imports
 				Importer.init(ScrapMechanicTracer.this);
@@ -90,7 +97,7 @@ public class ScrapMechanicTracer extends GhidraScript {
 				try {
 					ScrapMechanic structure = new ScrapMechanic(false);
 					
-					structure.evaluate();
+					//structure.evaluate();
 				} catch(Exception e) {
 					e.printStackTrace();
 				}
@@ -102,9 +109,6 @@ public class ScrapMechanicTracer extends GhidraScript {
 				
 				long ellapsed = System.currentTimeMillis() - start;
 				println("Time ellapsed: " + ellapsed + " ms");
-				
-				// TODO: Only update if needed
-				manager.endTransaction(transactionId, true);
 			}
 		});
 	}

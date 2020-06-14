@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import ghidra.program.model.mem.MemoryAccessException;
 import sm.util.LuaReg;
 import sm.util.LuaRegList;
 import sm.util.SMUtil;
@@ -33,7 +32,7 @@ public class SMContainerBuilder {
 			for(LuaReg ref : refs) {
 				list.add(SMUtil.loadSMObject(ref));
 			}
-		} catch(MemoryAccessException e) {
+		} catch(Exception e) {
 			e.printStackTrace();
 		}
 		

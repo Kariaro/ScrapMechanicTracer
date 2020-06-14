@@ -49,6 +49,8 @@ public final class PointerFinder {
 		}
 		
 		System.out.println();
+		System.out.println("Version: " + version);
+		System.out.println();
 	}
 	
 	public static Set<Address> getStructures() {

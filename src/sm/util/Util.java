@@ -10,6 +10,7 @@ import ghidra.program.model.address.AddressFactory;
 import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.data.DataTypeManager;
 import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.FunctionManager;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.MemoryAccessException;
@@ -53,6 +54,10 @@ public class Util {
 	
 	public static DataTypeManager getDataTypeManager() {
 		return getProgram().getDataTypeManager();
+	}
+	
+	public static FunctionManager getFunctionManager() {
+		return getProgram().getFunctionManager();
 	}
 	
 	public static SMDialog getDialog() {
@@ -101,16 +106,20 @@ public class Util {
 		return new String(bs.toByteArray());
 	}
 	
+	@Deprecated
 	public static int getFunctionLength(Function func) {
 		AddressSetView view = func.getBody();
 		Address min = view.getMinAddress();
 		Address max = view.getMaxAddress();
 		return (int)(max.getOffset() - min.getOffset());
 	}
-	
+
+	@Deprecated
 	public static Address[] findBytesInFunction(Function func, String bytePattern) {
 		return findBytesInFunction(func, bytePattern, 8);
 	}
+
+	@Deprecated
 	public static Address[] findBytesInFunction(Function func, String bytePattern, int max_finds) {
 		if(max_finds < 1) return null;
 		
@@ -153,6 +162,8 @@ public class Util {
 		return list.toArray(Address[]::new);
 	}
 	
+
+	@Deprecated
 	private static boolean _fitsPattern(byte[] bytes, int[] pattern, int offset) {
 		for(int i = 0; i < pattern.length; i++) {
 			int val = Byte.toUnsignedInt(bytes[i + offset]);
@@ -165,6 +176,8 @@ public class Util {
 		return true;
 	}
 	
+
+	@Deprecated
 	public static Function getFunctionAt(Address addr) {
 		Function result = SCRIPT.getFunctionAt(addr);
 		if(result == null) {
@@ -174,7 +187,8 @@ public class Util {
 		
 		return result;
 	}
-	
+
+	@Deprecated
 	public static Function getFunctionAt(Address addr, boolean createNew, String name) {
 		Function result = SCRIPT.getFunctionAt(addr);
 		if(result == null && createNew) {
@@ -184,7 +198,8 @@ public class Util {
 		
 		return result;
 	}
-	
+
+	@Deprecated
 	public static Function getFunctionAt(String func) {
 		AddressFactory addressFactory = SCRIPT.getAddressFactory();
 		Address addr = addressFactory.getAddress(func);

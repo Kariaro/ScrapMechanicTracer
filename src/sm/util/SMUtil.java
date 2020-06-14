@@ -3,7 +3,6 @@ package sm.util;
 import java.util.ArrayList;
 import java.util.List;
 
-import ghidra.app.cmd.disassemble.DisassembleCommand;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
@@ -15,46 +14,36 @@ public class SMUtil {
 	private static final String PUSH = "PUSH";
 	private static final String CALL = "CALL";
 	
-	// TODO: Run DecompilerParameterIdCmd on only the selected
-	//       script functions with an iterated depth of 'x'
-	
-	public static SMObject loadSMObject(LuaReg reg) throws MemoryAccessException {
+	public static SMObject loadSMObject(LuaReg reg) throws MemoryAccessException, Exception {
 		Address entry = Util.getAddress(reg.func);
+		
+		Function func = FunctionUtil.createFunction(entry);
 		Instruction iter = Util.getInstructionAt(entry);
 		
 		if(iter == null) {
-			// TODO: Check if it needs to be decompiled...
-			//AutoAnalysisManager mgr = AutoAnalysisManager.getAnalysisManager(Util.getProgram());
-			//mgr.disassemble(entry);
-			
-			DisassembleCommand command = new DisassembleCommand(entry, null, true);
-			boolean status = command.applyTo(Util.getProgram(), Util.getMonitor());
-			
-			System.out.println("Status: " + status);
-			iter = Util.getInstructionAt(entry);
+			// TODO: What do we do now. We could not read the instruction. What next?
+			throw new Exception("Could not read the instruction at address ' " + entry + " '");
 		}
 		
-		Function func = reg.getFunction();
 		SMObject object = new SMObject(reg.getBase(), func);
-		
-		// System.out.println("Function: " + func);
 		List<Instruction> list = new ArrayList<>();
 		
-		int length = Util.getFunctionLength(func);
+		//int length = Util.getFunctionLength(func);
 		Address push_find = null;
-		
-		
-		do {
-			iter = iter.getNext();
+		while((iter = iter.getNext()) != null) {
 			Address addr = iter.getAddress();
-			if(Util.getOffset(func, addr) > length) break;
+			
+			// System.out.println(addr + ", " + iter + " , " + func.getBody().contains(addr));
+			// TODO: Is this safe to assume?
+			if(!func.getBody().contains(addr)) break;
+			// if(Util.getOffset(func, addr) > length) break;
 			
 			String mnemonic = iter.getMnemonicString();
 			if(PUSH.equals(mnemonic)) {
 				list.add(iter);
 				
 				if(push_find != null) {
-					Address check = iter.getAddress(0);
+					Address check = getAddress(iter);
 					
 					if(push_find.equals(check)) {
 						// System.out.println("    : Constant address -> " + list.get(0).getAddress(0));
@@ -84,40 +73,34 @@ public class SMUtil {
 				
 				list.clear();
 			}
-		} while(iter != null);
+		}
+		
 		list.clear();
+		
+		System.out.println(object);
 		
 		return object;
 	}
 	
-	public static String loadVersionString(Address entry) throws MemoryAccessException {
+	public static String loadVersionString(Address entry) throws MemoryAccessException, Exception {
+		Function func = FunctionUtil.createFunction(entry);
 		Instruction iter = Util.getInstructionAt(entry);
 		
-		if(iter == null) {
-			// TODO: Check if it needs to be decompiled...
-			//AutoAnalysisManager mgr = AutoAnalysisManager.getAnalysisManager(Util.getProgram());
-			//mgr.disassemble(entry);
-			
-			DisassembleCommand command = new DisassembleCommand(entry, null, true);
-			command.applyTo(Util.getProgram(), Util.getMonitor());
-			
-			iter = Util.getInstructionAt(entry);
-		}
-		
-		Function func = Util.getFunctionAt(entry);
 		List<Instruction> list = new ArrayList<>();
 		
-		int length = Util.getFunctionLength(func);
+		//int length = Util.getFunctionLength(func);
 		
 		String version = null;
 		String buildVersion = null;
 		
 		boolean skipNext = false;
-		do {
-			iter = iter.getNext();
+		while((iter = iter.getNext()) != null) {
+			//do {
+			//iter = iter.getNext();
 			
 			Address addr = iter.getAddress();
-			if(Util.getOffset(func, addr) > length) break;
+			//if(Util.getOffset(func, addr) > length) break;
+			if(!func.getBody().contains(addr)) break;
 			
 			String mnemonic = iter.getMnemonicString();
 			
@@ -155,7 +138,7 @@ public class SMUtil {
 				}
 				
 			}
-		} while(iter != null);
+		}
 		list.clear();
 		
 		return version + '.' + buildVersion;

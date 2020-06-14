@@ -444,7 +444,7 @@ public class SMDialog extends JFrame {
 		comboBoxPointersMemory.setSelectedItem(CacheUtil.getProperty("pointers.memoryblock", ".data"));
 		comboBoxStringsMemory.setSelectedItem(CacheUtil.getProperty("strings.memoryblock", ".rdata"));
 		comboBoxExploreDepth.setSelectedItem(CacheUtil.getProperty("decompiler.maxDepth", "3"));
-		spinnerTimeout.setValue(CacheUtil.getProperty("decompiler.timeout", "10", Integer::valueOf));
+		spinnerTimeout.setValue(CacheUtil.getProperty("decompiler.timeout", 10, Integer::valueOf));
 		comboBoxThreads.setSelectedItem(CacheUtil.getProperty("decompiler.threads", Runtime.getRuntime().availableProcessors() - 1));
 		filePathField.setText(CacheUtil.getProperty("traces.path", CacheUtil.getDefaultTracePath()));
 	}

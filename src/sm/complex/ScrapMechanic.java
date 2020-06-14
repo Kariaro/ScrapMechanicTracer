@@ -29,6 +29,7 @@ public final class ScrapMechanic {
 	public static final String REFERENCES_MEMORY_BLOCK = ".data";
 	public static final String STRINGS_MEMORY_BLOCK = ".rdata";
 	
+	// TODO: Replace these with functions
 	public static int DECOMPILE_MAX_DEPTH = 3;
 	public static int DECOMPILE_TIMEOUT = 10;
 	public static int DECOMPILE_THREADS = 14;
