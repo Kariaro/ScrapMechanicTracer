@@ -21,6 +21,7 @@ import ghidra.program.model.symbol.Symbol;
 import ghidra.program.model.symbol.SymbolIterator;
 import ghidra.program.model.symbol.SymbolTable;
 import sm.complex.ScrapMechanic;
+import sm.util.FunctionUtil;
 import sm.util.Util;
 
 /**
@@ -259,8 +260,15 @@ public class Importer {
 	 * @throws Exception
 	 */
 	private static boolean isDifferent(Symbol symbol, FunctionSignature type) throws Exception {
-		Function function = Util.getFunctionAt(symbol.getAddress(), true, symbol.getName());
+		Function function = FunctionUtil.createExternalFunction(symbol.getAddress(), symbol.getName());
 		if(function == null || type == null) return false; // TODO: What do we do here?
+		
+		/*
+		if(symbol.getObject() instanceof Function) {
+			function = (Function)symbol.getObject();
+		} else {
+			throw new Exception("Symbol was not linked to a function ' " + symbol + " '");
+		}*/
 		
 		if(!function.getCallingConventionName().equals("__cdecl")) {
 			function.setCallingConvention("__cdecl");

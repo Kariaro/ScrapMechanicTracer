@@ -5,8 +5,8 @@ import java.io.Serializable;
 import ghidra.program.model.listing.Function;
 import sm.complex.AnalysedFunction;
 import sm.complex.ScrapMechanic;
+import sm.util.FunctionUtil;
 import sm.util.LuaReg;
-import sm.util.Util;
 
 public class SMFunctionObject implements Serializable {
 	private static final long serialVersionUID = 3187779733238319470L;
@@ -34,7 +34,7 @@ public class SMFunctionObject implements Serializable {
 	}
 	
 	public Function getFunction() {
-		return Util.getFunctionAt(functionAddress);
+		return FunctionUtil.getFunctionAt(functionAddress);
 	}
 	
 	public String getFunctionAddressString() {

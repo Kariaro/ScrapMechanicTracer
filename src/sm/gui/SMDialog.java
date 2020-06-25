@@ -390,6 +390,8 @@ public class SMDialog extends JFrame {
 				CacheUtil.setProperty("decompiler.threads", comboBoxThreads.getSelectedItem());
 				CacheUtil.setProperty("decompiler.timeout", spinnerTimeout.getValue());
 				CacheUtil.setProperty("decompiler.maxDepth", comboBoxExploreDepth.getSelectedItem());
+				
+				Util.getMonitor().cancel();
 			}
 		});
 		

@@ -100,25 +100,29 @@ public final class ScrapMechanic {
 			Thread thread = new Thread(group, () -> {
 				FunctionExplorer explorer = new FunctionExplorer();
 				
+				FunctionPointer pointer = null;
 				try {
 					while(!queue.isEmpty()) {
 						if(Util.isMonitorCancelled()) break;
 						
-						FunctionPointer pointer = queue.poll();
+						pointer = queue.poll();
 						if(pointer == null) break;
 						
 						// 006f76f0 -> destroy
 						//if(!pointer.addr.equals("006f76f0")) continue;
 						//if(!pointer.addr.equals("006e6850")) continue;
+						//if(!pointer.name.equals("harvestableCustomProjectileAttack")) continue;
 						
 						System.out.printf("[Worker ID#%d]: Exploring: %s\n", id, pointer.addr + " -> " + pointer.name + "( --- );");
-						AnalysedFunction fuzzed = explorer.evaluate(Util.getFunctionAt(pointer.addr));
+						AnalysedFunction fuzzed = explorer.evaluate(pointer.addr);
 						mappings.put(pointer.addr, fuzzed);
 						
 						monitor.incrementProgress(1);
 					}
 				} catch(Exception e) {
+					//System.out.println("000000000000000000>>>>>>> " + pointer.addr + ", " + pointer.name);
 					e.printStackTrace();
+					//Util.getMonitor().cancel();
 				}
 				
 				// THIS IS IMPORTANT
@@ -147,6 +151,10 @@ public final class ScrapMechanic {
 			AnalysedFunction fuzzed = mappings.get(addr);
 			
 			object.setAnalysedFunction(fuzzed);
+			
+			if(TRACE && fuzzed != null) {
+				//System.out.println(object);
+			}
 		}
 		
 		evaluating = false;

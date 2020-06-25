@@ -33,7 +33,7 @@ public class LuaReg {
 	}
 	
 	public Function getFunction() {
-		return Util.getFunctionAt(func);
+		return FunctionUtil.getFunctionAt(func);
 	}
 	
 	@Override

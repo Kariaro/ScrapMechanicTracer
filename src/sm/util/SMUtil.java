@@ -28,15 +28,13 @@ public class SMUtil {
 		SMObject object = new SMObject(reg.getBase(), func);
 		List<Instruction> list = new ArrayList<>();
 		
-		//int length = Util.getFunctionLength(func);
 		Address push_find = null;
 		while((iter = iter.getNext()) != null) {
 			Address addr = iter.getAddress();
 			
-			// System.out.println(addr + ", " + iter + " , " + func.getBody().contains(addr));
 			// TODO: Is this safe to assume?
+			//if(Util.getOffset(func, addr) > length) break;
 			if(!func.getBody().contains(addr)) break;
-			// if(Util.getOffset(func, addr) > length) break;
 			
 			String mnemonic = iter.getMnemonicString();
 			if(PUSH.equals(mnemonic)) {
@@ -88,17 +86,13 @@ public class SMUtil {
 		
 		List<Instruction> list = new ArrayList<>();
 		
-		//int length = Util.getFunctionLength(func);
-		
 		String version = null;
 		String buildVersion = null;
 		
 		boolean skipNext = false;
 		while((iter = iter.getNext()) != null) {
-			//do {
-			//iter = iter.getNext();
-			
 			Address addr = iter.getAddress();
+			
 			//if(Util.getOffset(func, addr) > length) break;
 			if(!func.getBody().contains(addr)) break;
 			

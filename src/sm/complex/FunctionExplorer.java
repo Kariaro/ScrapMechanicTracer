@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import ghidra.app.cmd.disassemble.DisassembleCommand;
 import ghidra.app.decompiler.DecompInterface;
 import ghidra.app.decompiler.DecompileResults;
 import ghidra.program.model.address.Address;
@@ -28,6 +27,7 @@ import ghidra.program.model.pcode.Varnode;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.util.exception.InvalidInputException;
 import sm.SMFunctionObject;
+import sm.util.FunctionUtil;
 import sm.util.LuaUtil;
 import sm.util.Util;
 
@@ -40,6 +40,9 @@ import sm.util.Util;
  * @author HardCoded
  */
 public class FunctionExplorer implements Closeable {
+	// TODO: Cache functions by creating small auto functions
+	//       (a, b, c) -> List<Command> { processCommand(a, b, c); }
+	
 	private static final String CALL = "CALL";
 	private static final String COPY = "COPY";
 	
@@ -59,6 +62,18 @@ public class FunctionExplorer implements Closeable {
 	
 	public AnalysedFunction evaluate(SMFunctionObject object) {
 		return evaluate(object.getFunction());
+	}
+	
+	public AnalysedFunction evaluate(String entryPoint) {
+		Function function;
+		try {
+			function = FunctionUtil.createFunction(Util.getAddress(entryPoint), true, true);
+		} catch(Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+		
+		return evaluate(function);
 	}
 	
 	public AnalysedFunction evaluate(Function function) {
@@ -108,13 +123,23 @@ public class FunctionExplorer implements Closeable {
 	private void enterFunction(AnalysedFunction fuzzed, Address callAddress, int depth, Varnode[] params) {
 		if(Util.isMonitorCancelled()) return;
 
-		Function function = Util.getFunctionAt(callAddress);
+		// Function function = Util.getFunctionAt(callAddress);
+		Function function;
+		try {
+			function = FunctionUtil.createFunction(callAddress, true, true);
+		} catch(Exception e) {
+			e.printStackTrace();
+			return;
+		}
 		
+		
+		/*
 		// TODO: Find a better way of checking if a function is disassembled!
 		if(Util.getInstructionAt(callAddress) == null) {
 			DisassembleCommand command = new DisassembleCommand(callAddress, null, true);
 			command.applyTo(Util.getProgram(), Util.getMonitor());
 		}
+		*/
 		
 		if(TRACE) System.out.println("Addr: " + callAddress + ", " + function);
 		if(function == null) return;
@@ -136,6 +161,8 @@ public class FunctionExplorer implements Closeable {
 			traverseFunction(fuzzed, local, depth, params);
 		} catch(Throwable e) {
 			e.printStackTrace();
+			//System.out.println(" > " + callAddress);
+			//throw new NullPointerException();
 		}
 	}
 	
@@ -212,8 +239,15 @@ public class FunctionExplorer implements Closeable {
 						//       an unexpected way. These unexpected values should be discarded because
 						//       of complexity.
 						//
-						Function nextFunction = Util.getFunctionAt(callAddress);
-
+						// Function nextFunction = Util.getFunctionAt(callAddress);
+						Function nextFunction;
+						try {
+							nextFunction = FunctionUtil.createFunction(callAddress, true, true);
+						} catch(Exception e) {
+							e.printStackTrace();
+							return;
+						}
+						
 						// NOTE: This is really unexpected
 						if(nextFunction == null) break;
 						

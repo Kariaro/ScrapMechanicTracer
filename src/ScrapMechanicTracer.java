@@ -97,7 +97,7 @@ public class ScrapMechanicTracer extends GhidraScript {
 				try {
 					ScrapMechanic structure = new ScrapMechanic(false);
 					
-					//structure.evaluate();
+					structure.evaluate();
 				} catch(Exception e) {
 					e.printStackTrace();
 				}
