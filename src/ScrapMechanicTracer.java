@@ -48,6 +48,11 @@ public class ScrapMechanicTracer extends GhidraScript {
 		// Initialize the cache
 		CacheUtil.init();
 		
+		if(true) {
+			//FunctionExplorer2 func = new FunctionExplorer2();
+			//return;
+		}
+		
 		// Initialize the util and dialog
 		SMDialog dialog = new SMDialog(this);
 		Util.init(this, dialog);

@@ -35,6 +35,11 @@ public class SMObject implements Serializable {
 		loadFunctionAddress = function.getEntryPoint().toString();
 	}
 	
+	public SMObject(Address address, Address function) {
+		basePointerAddress = address.toString();
+		loadFunctionAddress = function.toString();
+	}
+	
 	public void importRegister(Address name, Address table) {
 		nameAddress = name.toString();
 		tabledataAddress = table.toString();

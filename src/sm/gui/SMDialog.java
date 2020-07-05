@@ -64,18 +64,20 @@ public class SMDialog extends JFrame {
 		String[] memoryComboBoxValues = new String[] { "Search All" };
 		
 		if(ghidra != null) {
-			List<String> names = new ArrayList<>();
-			MemoryBlock[] blocks = ghidra.getCurrentProgram().getMemory().getBlocks();
-			
-			for(MemoryBlock block : blocks) {
-				names.add(block.getName());
+			if(ghidra.getCurrentProgram() != null) {
+				List<String> names = new ArrayList<>();
+				MemoryBlock[] blocks = ghidra.getCurrentProgram().getMemory().getBlocks();
+				
+				for(MemoryBlock block : blocks) {
+					names.add(block.getName());
+				}
+				
+				String[] namesArray = names.toArray(String[]::new);
+				String[] newArray = new String[names.size() + 1];
+				newArray[0] = "Search All";
+				System.arraycopy(namesArray, 0, newArray, 1, names.size());
+				memoryComboBoxValues = newArray;
 			}
-			
-			String[] namesArray = names.toArray(String[]::new);
-			String[] newArray = new String[names.size() + 1];
-			newArray[0] = "Search All";
-			System.arraycopy(namesArray, 0, newArray, 1, names.size());
-			memoryComboBoxValues = newArray;
 		}
 		
 		String[] threadValues = new String[] { "1" };
