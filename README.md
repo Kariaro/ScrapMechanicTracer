@@ -2,7 +2,7 @@
 
 This is a plugin for ghidra and was created to make modding easier for the game ScrapMechanic.
 Because most commands are not documented this plugin was made to get all the function arguments
-and to dump them to a readable file. Here are some example on how the traces will look: [Examples](../blob/mater/res/traces).
+and to dump them to a readable file. Here are some example on how the traces will look: [Examples](../master/res/traces).
 
 What this plugin does is to search for all values inside the global table **sm** and trying to
 understand the code flow of each function to reverseengineer the call stack.
