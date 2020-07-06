@@ -1,7 +1,9 @@
 package sm.hardcoded.plugin.tracer;
 
-import java.io.File;
-import java.util.List;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintWriter;
+
+import javax.swing.ImageIcon;
 
 import docking.ActionContext;
 import docking.DockingWindowManager;
@@ -14,12 +16,9 @@ import ghidra.framework.options.SaveState;
 import ghidra.framework.plugintool.PluginInfo;
 import ghidra.framework.plugintool.PluginTool;
 import ghidra.framework.plugintool.util.PluginStatus;
-import ghidra.program.model.address.AddressFactory;
 import ghidra.program.model.listing.Program;
-import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.util.Msg;
 import resources.ResourceManager;
-import sm.SMObject;
 
 @PluginInfo(
 	category = PluginCategoryNames.ANALYSIS,
@@ -31,9 +30,14 @@ import sm.SMObject;
 )
 public class ScrapMechanicPlugin extends ProgramPlugin implements FrontEndable {
 	private ScrapMechanicWindowProvider provider;
+	private ScrapMechanicBookmarkManager bookmarkManager;
+	private ScrapMechanicAnalyser analyser;
+	private ProgramMemory programMemory;
 	
-	private TableElementFinder elementFinder;
-	private TableFinder tableFinder;
+	private boolean scanning;
+	
+	final ImageIcon icon_64 = ResourceManager.loadImage("sm/hardcoded/plugin/icons/icon_64.png");
+	final ImageIcon icon_16 = ResourceManager.loadImage("sm/hardcoded/plugin/icons/icon_16.png");
 	
 	public ScrapMechanicPlugin(PluginTool tool) {
 		super(tool, false, false);
@@ -41,45 +45,44 @@ public class ScrapMechanicPlugin extends ProgramPlugin implements FrontEndable {
 	
 	@Override
 	protected void programOpened(Program program) {
-		// Msg.debug(this, "Program Opened: " + program);
-		if(provider == null) return;
-		provider.setScanEnabled(getCurrentProgram() != null);
+		updateScanOptions();
 	}
 	
 	@Override
 	protected void programClosed(Program program) {
-		// Msg.debug(this, "Program Closed: " + program);
-		if(provider == null) return;
-		provider.setScanEnabled(getCurrentProgram() != null);
+		updateScanOptions();
 	}
 	
 	@Override
 	protected void programActivated(Program program) {
-		// Msg.debug(this, "Program Activated: " + program);
-		// Change active program
-		if(provider == null) return;
-		provider.setScanEnabled(getCurrentProgram() != null);
+		updateScanOptions();
+	}
+	
+	// TODO: Disallow the user to change the current program while the tracer is scanning.
+	@Override
+	protected boolean canClose() {
+		return !scanning;
+	}
+	
+	private void updateScanOptions() {
+		if(provider != null) {
+			provider.setScanEnabled(getCurrentProgram() != null);
+			
+			if(bookmarkManager != null) {
+				provider.setResetScanEnabled(bookmarkManager.hasBookmarks());
+			}
+		}
 	}
 	
 	public void init() {
 		super.init();
 		
 		provider = new ScrapMechanicWindowProvider(this);
-		elementFinder = new TableElementFinder(this);
-		tableFinder = new TableFinder(this);
+		bookmarkManager = new ScrapMechanicBookmarkManager(this);
+		programMemory = new ProgramMemory(this);
+		analyser = new ScrapMechanicAnalyser(this);
 		
 		setupActions();
-	}
-	
-	public String getPluginHome() {
-		String userHome = System.getProperty("user.home");
-		File pluginHome = new File(userHome, "ScrapMechanicGhidraPlugin");
-		if(!pluginHome.exists()) pluginHome.mkdir();
-		
-		File tracePath = new File(pluginHome, "traces");
-		if(!tracePath.exists()) tracePath.mkdir();
-		
-		return pluginHome.getAbsolutePath();
 	}
 	
 	public void readConfigState(SaveState saveState) {
@@ -96,7 +99,6 @@ public class ScrapMechanicPlugin extends ProgramPlugin implements FrontEndable {
 		saveState.putInt("threads", provider.getThreads());
 		saveState.putInt("searchDepth", provider.getSearchDepth());
 		saveState.putString("savePath", provider.getSavePath());
-		
 	}
 	
 	private void setupActions() {
@@ -107,7 +109,7 @@ public class ScrapMechanicPlugin extends ProgramPlugin implements FrontEndable {
 		};
 		
 		DockingWindowManager.getHelpService().excludeFromHelp(action);
-		action.setToolBarData(new ToolBarData(ResourceManager.loadImage("sm/hardcoded/plugin/icons/icon_64.png")));
+		action.setToolBarData(new ToolBarData(icon_64));
 		tool.addAction(action);
 	}
 	
@@ -115,41 +117,51 @@ public class ScrapMechanicPlugin extends ProgramPlugin implements FrontEndable {
 	 * Start scanning the current program.
 	 */
 	public void startScan() {
-		int transactionId = currentProgram.startTransaction("ScrapMechanicPlugin - Scan");
-		Msg.debug(this, "Start scan was pressed");
-		
-		// Disallow the user to change the current program while the tracer is scanning.
-		
-		// TODO: Use the bookmark manager to cache data locations..
-		
-		if(false) {
+		Thread thread = new Thread(() -> {
+			int transactionId = -1;
 			try {
-				tableFinder.loadMemory();
-			} catch(MemoryAccessException e) {
-				e.printStackTrace();
-				Msg.showError(this, provider.getComponent(), "Failed to load memory", e.getMessage());
-				return;
+				scanning = true;
+				
+				transactionId = currentProgram.startTransaction("ScrapMechanicPlugin - Scan");
+				
+				boolean result = analyser.startAnalysis();
+				
+				if(!result) {
+					Msg.showError(this, provider.getComponent(), "Start analysis failed", analyser.getLastError());
+				}
+				
+				currentProgram.endTransaction(transactionId, result);
+			} catch(Throwable e) {
+				ByteArrayOutputStream bs = new ByteArrayOutputStream();
+				PrintWriter writer = new PrintWriter(bs);
+				e.printStackTrace(writer);
+				writer.flush();
+				writer.close();
+				
+				Msg.showError(this, provider.getComponent(), "Exception: " + e.getCause(), new String(bs.toByteArray()));
+				
+				if(transactionId != -1) {
+					currentProgram.endTransaction(transactionId, false);
+				}
+			} finally {
+				updateScanOptions();
+				scanning = false;
 			}
-			
-			List<FunctionPointer> tables = tableFinder.findFunctionTable();
-			for(FunctionPointer func : tables) {
-				Msg.debug(this, "Register function: (" + func.name + ") [" + func.entry + "]");
-				/*
-				if(func.name.equals("sm.construction")) {
-					Msg.warn(this, "new FunctionPointer(new StringPointer(" + func.stringPointer.addr + ", " + func.name + "), " + func.entry + ", " + func.location + ");");
-				}*/
-			}
-		}
+		});
 		
-		AddressFactory fact = currentProgram.getAddressFactory();
-		FunctionPointer func = new FunctionPointer(new StringPointer(fact.getAddress("00e7f0d8"), "sm.construction"), fact.getAddress("0080c1b0"), fact.getAddress("00fe4038"));
-		SMObject object = elementFinder.findSMObject(func);
-
-		Msg.debug(this, object.toString());
-		
-		currentProgram.endTransaction(transactionId, true);
-		
-		// currentProgram.getBookmarkManager().setBookmark(addr, type, category, comment)
+		thread.start();
+	}
+	
+	public ScrapMechanicBookmarkManager getBookmarkManager() {
+		return bookmarkManager;
+	}
+	
+	public ScrapMechanicWindowProvider getWindow() {
+		return provider;
+	}
+	
+	public ProgramMemory getProgramMemory() {
+		return programMemory;
 	}
 	
 	protected void dispose() {

@@ -33,32 +33,79 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 	private JLabel label_version;
 	private JLabel label_functions;
 	private JTextField textField_savePath;
+	private JTextArea textArea_logging;
+	private JProgressBar progressBar;
 	private JButton btnScan;
+	private JButton btnResetScan;
 	
 	private JComboBox<Integer> comboBox_threads;
 	private JComboBox<Integer> comboBox_searchDepth;
 	
 	public void setStatusText(String string) {
-		if(label_status == null) return;
-		label_status.setText(string);
+		if(label_status != null)
+			label_status.setText(string);
 	}
 	
 	public void setVersionText(String string) {
-		if(label_version == null) return;
-		label_version.setText(string);
+		if(label_version != null)
+			label_version.setText(string);
 	}
 	
 	public void setFunctionsText(String string) { 
-		if(label_functions == null) return;
-		label_functions.setText(string);
+		if(label_functions != null)
+			label_functions.setText(string);
 	}
 	
 	public void setScanEnabled(boolean b) {
-		if(btnScan == null) return;
-		btnScan.setEnabled(b);
+		if(btnScan != null)
+			btnScan.setEnabled(b);
+	}
+	
+	public void setResetScanEnabled(boolean b) {
+		// The reset scan button is not good enough right now..
+		// TODO: Update the bookmark manager gui when you press the reset scan button.
+		// TODO: Update the button when the bookmark manager has changed.
+		
+		//if(btnResetScan != null)
+		//    btnResetScan.setEnabled(b);
 	}
 	
 	
+	
+	public void setProgressBar(double percentage) {
+		setProgressBar(percentage, 100);
+	}
+	
+	public void setProgressBar(double percentage, int max) {
+		if(progressBar == null) return;
+		
+		int value = (int)(percentage * 10000);
+		if(value < 0) value = 0;
+		if(value > 10000) value = 10000;
+		
+		// int display = (int)(percentage * max);
+		// if(display < 0) display = 0;
+		// if(display > max) display = max;
+		
+		progressBar.setValue(value);
+		progressBar.setString((value / 100) + " %");
+	}
+	
+	public void writeLog(Object caller, String string) {
+		if(textArea_logging == null) return;
+		
+		StringBuilder sb = new StringBuilder();
+		sb.append(textArea_logging.getText());
+		
+		if(sb.length() != 0) sb.append('\n');
+		sb.append(caller.getClass().getSimpleName()).append(": ").append(string);
+		textArea_logging.setText(sb.toString());
+	}
+	
+	public void clearLogger() {
+		if(textArea_logging != null)
+			textArea_logging.setText("");
+	}
 	
 	///////////////////////////////////////////////////
 	// Properties                                    //
@@ -106,19 +153,30 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 	
 	private String getValidSavePath(String savePath) {
 		if(savePath == null) {
-			String pluginHome = plugin.getPluginHome();
+			String pluginHome = getPluginHome();
 			File tracesPath = new File(pluginHome, "traces");
 			savePath = tracesPath.getAbsolutePath();
 		} else {
 			File tracesPath = new File(savePath);
 			if(!tracesPath.exists() || !tracesPath.isDirectory()) {
-				String pluginHome = plugin.getPluginHome();
+				String pluginHome = getPluginHome();
 				tracesPath = new File(pluginHome, "traces");
 				savePath = tracesPath.getAbsolutePath();
 			}
 		}
 		
 		return savePath;
+	}
+	
+	private String getPluginHome() {
+		String userHome = System.getProperty("user.home");
+		File pluginHome = new File(userHome, "ScrapMechanicGhidraPlugin");
+		if(!pluginHome.exists()) pluginHome.mkdir();
+		
+		File tracePath = new File(pluginHome, "traces");
+		if(!tracePath.exists()) tracePath.mkdir();
+		
+		return pluginHome.getAbsolutePath();
 	}
 	
 	private void createComponent() {
@@ -204,9 +262,9 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 		panel_1.add(panelSettings);
 		GridBagLayout gbl_panel_2 = new GridBagLayout();
 		gbl_panel_2.columnWidths = new int[]{0, 0, 0};
-		gbl_panel_2.rowHeights = new int[]{0, 0, 0, 0};
+		gbl_panel_2.rowHeights = new int[]{0, 0, 0, 0, 0};
 		gbl_panel_2.columnWeights = new double[]{0.0, 1.0, Double.MIN_VALUE};
-		gbl_panel_2.rowWeights = new double[]{0.0, 0.0, 0.0, Double.MIN_VALUE};
+		gbl_panel_2.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
 		panelSettings.setLayout(gbl_panel_2);
 		
 		JLabel lblSavePath = new JLabel("Trace Save Path");
@@ -288,7 +346,7 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 		JLabel lblSearchDepth = new JLabel("Max Search Depth");
 		GridBagConstraints gbc_lblNewLabel_2 = new GridBagConstraints();
 		gbc_lblNewLabel_2.anchor = GridBagConstraints.WEST;
-		gbc_lblNewLabel_2.insets = new Insets(0, 5, 0, 5);
+		gbc_lblNewLabel_2.insets = new Insets(0, 5, 5, 5);
 		gbc_lblNewLabel_2.gridx = 0;
 		gbc_lblNewLabel_2.gridy = 2;
 		panelSettings.add(lblSearchDepth, gbc_lblNewLabel_2);
@@ -297,55 +355,78 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 		comboBox_searchDepth.setFocusable(false);
 		comboBox_searchDepth.setModel(new DefaultComboBoxModel<>(new Integer[] { 1, 2, 3, 4, 5 }));
 		GridBagConstraints gbc_comboBox_1 = new GridBagConstraints();
+		gbc_comboBox_1.insets = new Insets(0, 0, 5, 0);
 		gbc_comboBox_1.fill = GridBagConstraints.HORIZONTAL;
 		gbc_comboBox_1.gridx = 1;
 		gbc_comboBox_1.gridy = 2;
 		panelSettings.add(comboBox_searchDepth, gbc_comboBox_1);
 		
+		btnResetScan = new JButton("Reset Scan Data");
+		GridBagConstraints gbc_btnNewButton_1 = new GridBagConstraints();
+		gbc_btnNewButton_1.insets = new Insets(0, -1, 0, -1);
+		gbc_btnNewButton_1.fill = GridBagConstraints.BOTH;
+		gbc_btnNewButton_1.gridx = 1;
+		gbc_btnNewButton_1.gridy = 3;
+		panelSettings.add(btnResetScan, gbc_btnNewButton_1);
+		btnResetScan.setEnabled(false);
+		btnResetScan.setFocusable(false);
+		btnResetScan.addActionListener((e) -> {
+			plugin.getBookmarkManager().clearBookmarks();
+			btnResetScan.setEnabled(false);
+		});
+		
 		JPanel panelData = new JPanel();
+		panelData.setPreferredSize(new Dimension(10, 32767));
 		panelData.setBorder(new TitledBorder(null, "Data", TitledBorder.LEADING, TitledBorder.TOP, null, null));
 		panel_1.add(panelData);
 		GridBagLayout gbl_panelData = new GridBagLayout();
 		gbl_panelData.columnWidths = new int[]{0, 0, 0};
-		gbl_panelData.rowHeights = new int[]{0, 0, 0, 0, 0};
-		gbl_panelData.columnWeights = new double[]{0.0, 1.0, Double.MIN_VALUE};
-		gbl_panelData.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
+		gbl_panelData.rowHeights = new int[]{0, 0, 0};
+		gbl_panelData.columnWeights = new double[]{1.0, 1.0, Double.MIN_VALUE};
+		gbl_panelData.rowWeights = new double[]{1.0, 0.0, Double.MIN_VALUE};
 		panelData.setLayout(gbl_panelData);
+		
+		JScrollPane scrollPane = new JScrollPane();
+		scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+		GridBagConstraints gbc_scrollPane = new GridBagConstraints();
+		gbc_scrollPane.insets = new Insets(0, 1, 5, 0);
+		gbc_scrollPane.gridwidth = 2;
+		gbc_scrollPane.fill = GridBagConstraints.BOTH;
+		gbc_scrollPane.gridx = 0;
+		gbc_scrollPane.gridy = 0;
+		panelData.add(scrollPane, gbc_scrollPane);
+		
+		textArea_logging = new JTextArea();
+		textArea_logging.setFont(new Font("Monospaced", Font.PLAIN, 11));
+		textArea_logging.setEditable(false);
+		textArea_logging.setDisabledTextColor(Color.BLACK);
+		scrollPane.setViewportView(textArea_logging);
 		
 		btnScan = new JButton("Scan");
 		btnScan.setFocusable(false);
 		btnScan.setEnabled(plugin.getCurrentProgram() != null);
-		GridBagConstraints gbc_btnNewButton = new GridBagConstraints();
-		gbc_btnNewButton.fill = GridBagConstraints.HORIZONTAL;
-		gbc_btnNewButton.insets = new Insets(0, 0, 5, 5);
-		gbc_btnNewButton.gridx = 0;
-		gbc_btnNewButton.gridy = 2;
-		panelData.add(btnScan, gbc_btnNewButton);
+		GridBagConstraints gbc_btnNewButton_133 = new GridBagConstraints();
+		gbc_btnNewButton_133.fill = GridBagConstraints.HORIZONTAL;
+		gbc_btnNewButton_133.anchor = GridBagConstraints.WEST;
+		gbc_btnNewButton_133.insets = new Insets(0, 0, 0, 5);
+		gbc_btnNewButton_133.gridx = 0;
+		gbc_btnNewButton_133.gridy = 1;
+		panelData.add(btnScan, gbc_btnNewButton_133);
 		btnScan.addActionListener((event) -> {
 			plugin.startScan();
 		});
 		
-		JProgressBar progressBar = new JProgressBar();
+		progressBar = new JProgressBar();
 		progressBar.setPreferredSize(new Dimension(146, 22));
 		progressBar.setMaximumSize(new Dimension(32767, 22));
 		progressBar.setMinimumSize(new Dimension(10, 22));
+		progressBar.setMaximum(10000);
 		progressBar.setStringPainted(true);
 		GridBagConstraints gbc_progressBar = new GridBagConstraints();
-		gbc_progressBar.insets = new Insets(0, 0, 5, 0);
 		gbc_progressBar.anchor = GridBagConstraints.SOUTH;
 		gbc_progressBar.fill = GridBagConstraints.HORIZONTAL;
 		gbc_progressBar.gridx = 1;
-		gbc_progressBar.gridy = 2;
+		gbc_progressBar.gridy = 1;
 		panelData.add(progressBar, gbc_progressBar);
-		
-		JButton btnNewButton = new JButton("Full Scan");
-		btnNewButton.setEnabled(false);
-		btnNewButton.setFocusable(false);
-		GridBagConstraints gbc_btnNewButton03 = new GridBagConstraints();
-		gbc_btnNewButton03.fill = GridBagConstraints.HORIZONTAL;
-		gbc_btnNewButton03.insets = new Insets(0, 0, 0, 5);
-		gbc_btnNewButton03.gridx = 0;
-		gbc_btnNewButton03.gridy = 3;
-		panelData.add(btnNewButton, gbc_btnNewButton03);
 	}
 }
