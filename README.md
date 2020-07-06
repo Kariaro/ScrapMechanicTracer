@@ -1,32 +1,22 @@
 # ScrapMechanicTracer
 
-This script was made for ghidra.....
+This is a plugin for ghidra and was created to make modding easier for the game ScrapMechanic.
+Because most commands are not documented this plugin was made to get all the function arguments
+and to dump them to a readable file. Here are some example on how the traces will look: [Examples](../res/traces).
 
+What this plugin does is to search for all values inside the global table **sm** and trying to
+understand the code flow of each function to reverseengineer the call stack.
 
-This script will scan ScrapMechanic and return a file that lists all the function arguments and call locations..
-
-The idea of this script is to make it easier for modders to create new mods for ScrapMechanic.
-This should work on any version of Scrap Mechanic.
-
-
-
-# EVERYTHING BELOW IS NOT DONE YET...
+This plugin is aimed to work on every version of ScrapMechanic without any problems. (Tested 0.4.0 - 0.4.6)
 
 ### Installing
 
-> This is how you do bla. bla. bla
-> ...
+TODO
+
 
 
 
 ### Usage
-This is how you should use this code.
+Specify the amount of threads you want the analyser to use and the maximum depth it is alowed so search.
 
-
-### Step 1
-You should not use this code on a existing ghidra project. First you create a new project and you add ScrapMechanic.exe.
-
-### Step 2
-Run the script. This can take from 30 min to 2 hours the first time and will
-take 1 minute after this. Analyze the program. bla. bla. bla
-
+After that you press **Scan** and it will dump the trace to the selected **Trace Save Path**.
