@@ -9,9 +9,7 @@ import ghidra.app.decompiler.DecompileResults;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressFactory;
 import ghidra.program.model.listing.*;
-import ghidra.program.model.pcode.HighFunction;
-import ghidra.program.model.pcode.PcodeBlock;
-import ghidra.program.model.pcode.PcodeBlockBasic;
+import ghidra.program.model.pcode.*;
 import ghidra.util.Msg;
 import ghidra.util.task.TaskMonitor;
 
@@ -32,38 +30,13 @@ class CodeSyntaxTreeAnalyser {
 		
 		
 		provider.writeLog(this, "Working on the address -> " + entry);
-		Function function = functionManager.getFunctionAt(entry);
 		
-		{
-			DisassembleCommand cmd = new DisassembleCommand(entry, null, true);
-			cmd.enableCodeAnalysis(false);
-			if(!cmd.applyTo(currentProgram)) {
-				Msg.warn(this, "Failed to disassemble memory at address '" + entry + "'");
-			}
-			
-			if(function == null) {
-				CreateFunctionCmd cfcmd = new CreateFunctionCmd(entry);
-				
-				if(!cfcmd.applyTo(currentProgram, TaskMonitor.DUMMY)) {
-					Msg.error(this, "Failed to create function at address '" + entry + "'");
-					Msg.error(this, "MESSAGE: " + cfcmd.getStatusMsg());
-					
-					return;
-				} else {
-					function = cfcmd.getFunction();
-				}
-				
-				provider.writeLog(this, "cfc 0 -> " + cfcmd.getFunction());
-				provider.writeLog(this, "cfc 1 -> " + cfcmd.getName());
-				provider.writeLog(this, "cfc 2 -> " + cfcmd.getStatusMsg());
-				
-				if(function == null) {
-					Msg.error(this, "2 Failed to create function at address '" + entry + "'");
-					Msg.error(this, "2 MESSAGE: " + cfcmd.getStatusMsg());
-					return;
-				}
-			}
+		if(!discoverCode(entry)) {
+			// Bad state
+			return;
 		}
+		
+		Function function = functionManager.getFunctionAt(entry);
 		
 		DecompInterface decomp = new DecompInterface();
 		try {
@@ -78,74 +51,35 @@ class CodeSyntaxTreeAnalyser {
 			
 			HighFunction hf = result.getHighFunction();
 			provider.writeLog(this, "HighFunction: " + hf);
-			
-			// @SuppressWarnings("deprecation")
-			// VarnodeBank vbank = hf.getVbank();
-			// provider.writeLog(this, "  VarnodeBank: " + vbank);
-			// provider.writeLog(this, "    .size()    -> " + vbank.size());
-			// provider.writeLog(this, "    .isEmpty() -> " + vbank.isEmpty());
-			
 			provider.writeLog(this, "Printing Syntax Trees");
 			
-			// NOTE - function.getCalledFunctions(TaskMonitor.DUMMY);
+			// NOTE: function.getCalledFunctions(TaskMonitor.DUMMY);
+			// TODO: All calls to luaL_error that is made with a string and integer
+			//       check the strings content and check for argument boundaries.
+			List<CodeBlock> codeBlocks = new ArrayList<>();
 			
-			List<PcodeBlockBasic> list = hf.getBasicBlocks();
-			int index = 0;
-			for(PcodeBlockBasic basic : list) {
-				int i_size = basic.getInSize();
-				int o_size = basic.getOutSize();
-				provider.writeLog(this, " Block: " + index + " " + basic);
-				
-				provider.writeLog(this, "  Inputs:");
-				for(int i = 0; i < i_size; i++) {
-					PcodeBlock block = basic.getIn(i);
-					provider.writeLog(this, "    (" + i + "): " + block);
-				}
-				
-				provider.writeLog(this, "  Outputs:");
-				for(int i = 0; i < o_size; i++) {
-					PcodeBlock block = basic.getOut(i);
-					provider.writeLog(this, "    (" + i + "): " + block);
-				}
-				
-				if(index > 300) break;
-				index ++;
+			for(PcodeBlockBasic block : hf.getBasicBlocks()) {
+				codeBlocks.add(new CodeBlock(block));
 			}
-
 			
-			/*int index = 0;
-			while(iter.hasNext()) {
-				//VarnodeAST ast = iter.next();
-				PcodeOpAST ast = iter.next();
-				
-				//Iterator<PcodeOp> descend = ast.getBasicIter();//ast.getDescendants();
-				
-				provider.writeLog(this, " (" + index + ") " + ast);
-				/*int id = 0;
-				while(descend.hasNext()) {
-					PcodeOp op = descend.next();
-					provider.writeLog(this, "   (" + id + ") " + op);
-					id ++;
-				}*/
-				
-				/*
-				HighVariable hv = ast.getHigh();
-				provider.writeLog(this, "   " + hv);
-				if(hv != null) {
-					provider.writeLog(this, "     " + hv.getName());
-					provider.writeLog(this, "     " + hv.getStorage());
+//			for(CodeBlock block : codeBlocks) {
+//				System.out.println("------------------------- " + block);
+//				int index = 0;
+//				for(PcodeOp op : block.list) {
+//					System.out.printf("(%3d) %s\n", index++, op);
+//					if(index > 300) break;
+//				}
+//			}
+			
+			System.out.println("--------------------------------------------");
+			for(CodeBlock block : codeBlocks) {
+				for(PcodeOp op : block.list) {
+					process(block, op);
 				}
-				
-				if(index > 300) break;
-				index ++;
 			}
-			*/
-			
 		} catch(Exception e) {
 			decomp.closeProgram();
 			Msg.error(this, "MESSAGE: " + decomp.getLastMessage());
-			
-			throw e;
 		} finally {
 			decomp.closeProgram();
 		}
@@ -182,15 +116,39 @@ class CodeSyntaxTreeAnalyser {
 		}*/
 	}
 	
-	private CodeSyntaxTree createSyntaxTree(SMClass.Function func) {
+	private void process(CodeBlock block, PcodeOp op) {
+		int opcode = op.getOpcode();
+		Varnode output = op.getOutput();
+		
+		switch(opcode) {
+			case PcodeOp.CALL: {
+				Varnode address = op.getInput(0);
+				
+				System.out.printf("Calling ADDR:(%s) -> OUTPUT:(%s)\n", address, output);
+				
+				for(int i = 1; i < op.getNumInputs(); i++) {
+					System.out.printf("    %2d: %s\n", i, op.getInput(i));
+				}
+			}
+		}
+	}
+	
+	public CodeSyntaxTree createSyntaxTree(SMClass.Function func) {
+		Program currentProgram = plugin.getCurrentProgram();
+		if(currentProgram == null) return null;
+		
+		AddressFactory factory = currentProgram.getAddressFactory();
+		Address entry = factory.getAddress(func.getAddress());
+		return createSyntaxTree(entry);
+	}
+	
+	public CodeSyntaxTree createSyntaxTree(Address entry) {
 		Program currentProgram = plugin.getCurrentProgram();
 		if(currentProgram == null) return null;
 		
 		Instruction[][] branches = null;
 		
-		AddressFactory factory = currentProgram.getAddressFactory();
 		ScrapMechanicWindowProvider provider = plugin.getWindow();
-		Address entry = factory.getAddress(func.getAddress());
 		Listing listing = currentProgram.getListing();
 		
 		LinkedList<Address> search = new LinkedList<>();
@@ -299,6 +257,42 @@ class CodeSyntaxTreeAnalyser {
 		return new CodeSyntaxTree(branches);
 	}
 	
+	public boolean discoverCode(Address entry) {
+		Program currentProgram = plugin.getCurrentProgram();
+		if(currentProgram == null) return false;
+		
+		FunctionManager functionManager = currentProgram.getFunctionManager();
+		Function function = functionManager.getFunctionAt(entry);
+		
+		{
+			DisassembleCommand cmd = new DisassembleCommand(entry, null, true);
+			cmd.enableCodeAnalysis(false);
+			if(!cmd.applyTo(currentProgram)) {
+				Msg.warn(this, "Failed to disassemble memory at address '" + entry + "'");
+			}
+			
+			if(function == null) {
+				CreateFunctionCmd cfcmd = new CreateFunctionCmd(entry);
+				
+				if(!cfcmd.applyTo(currentProgram, TaskMonitor.DUMMY)) {
+					Msg.error(this, "Failed to create function at address '" + entry + "'");
+					Msg.error(this, "MESSAGE: " + cfcmd.getStatusMsg());
+					return false;
+				} else {
+					function = cfcmd.getFunction();
+				}
+				
+				if(function == null) {
+					Msg.error(this, "2 Failed to create function at address '" + entry + "'");
+					Msg.error(this, "2 MESSAGE: " + cfcmd.getStatusMsg());
+					return false;
+				}
+			}
+		}
+		
+		return true;
+	}
+	
 	private boolean isJumpInstruction(Instruction i) {
 		String mnemonic = i.getMnemonicString();
 		switch(mnemonic) {
@@ -351,7 +345,7 @@ class CodeSyntaxTreeAnalyser {
 		return false;
 	}
 	
-	static class CodeSyntaxTree {
+	public static class CodeSyntaxTree {
 		private final Instruction[][] branches;
 		
 		private CodeSyntaxTree(Instruction[][] branches) {
@@ -364,6 +358,23 @@ class CodeSyntaxTreeAnalyser {
 		
 		public Instruction[] getBranch(int index) {
 			return branches[index];
+		}
+	}
+	
+	private class CodeBlock {
+		private final PcodeBlockBasic block;
+		private final List<PcodeOp> list;
+		
+		public CodeBlock(PcodeBlockBasic block) {
+			List<PcodeOp> list = new ArrayList<>();
+			Iterator<PcodeOp> iter = block.getIterator();
+			while(iter.hasNext()) list.add(iter.next());
+			this.list = List.copyOf(list);
+			this.block = block;
+		}
+		
+		public String toString() {
+			return block.toString();
 		}
 	}
 }

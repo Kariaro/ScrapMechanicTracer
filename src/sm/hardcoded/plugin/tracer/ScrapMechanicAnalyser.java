@@ -25,9 +25,11 @@ class ScrapMechanicAnalyser {
 	private TableFinder tableFinder;
 	private LuaTypeManager luaTypeManager;
 	
+	private InformationAnalyser informationAnalyser;
 	private FunctionAnalyser functionAnalyser;
 	private ConstantAnalyser constantAnalyser;
 	private CodeSyntaxTreeAnalyser cstAnalyser;
+	private LuaFunctionImporter luaImporter;
 	private String errorMessage = "";
 	
 	public ScrapMechanicAnalyser(ScrapMechanicPlugin tool) {
@@ -40,6 +42,9 @@ class ScrapMechanicAnalyser {
 		functionAnalyser = new FunctionAnalyser(tool);
 		constantAnalyser = new ConstantAnalyser(tool);
 		cstAnalyser = new CodeSyntaxTreeAnalyser(tool);
+		
+		informationAnalyser = new InformationAnalyser(tool, cstAnalyser);
+		luaImporter = new LuaFunctionImporter(tool);
 	}
 	
 	public boolean startAnalysis() {
@@ -71,6 +76,13 @@ class ScrapMechanicAnalyser {
 			return false;
 		}
 		
+		try {
+			// Try import lua functions and categories
+			luaImporter.initialize();
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+		
 		List<FunctionPointer> tables = tableFinder.findFunctionTable();
 		List<SMDefinition> objects = elementFinder.findSMObjects(tables);
 		luaTypeManager.registerTypes(objects);
@@ -78,6 +90,10 @@ class ScrapMechanicAnalyser {
 		// Step 2:
 		//     a) Load all the functions and constants that are we have found
 		//        and add them to our own table.
+		//
+		//     b) Use a code flow analyser to get the arguments for each function that
+		//        we have found. Use a constant analyser to get the rest of the
+		//        information that we need.
 		SMClass table = new SMClass("sm");
 		
 		// Read all the functions and constants found in the table found in memory
@@ -88,12 +104,13 @@ class ScrapMechanicAnalyser {
 			constantAnalyser.analyseConstants(clazz, object);
 		}
 		
+		{
+			informationAnalyser.analyse(table);
+		}
+		
 		SMClass.Function func = table.getClass("localPlayer").getFunction("updateFpAnimation");
 		provider.writeLog(this, "Function -> " + (func == null ? null:func.getAddress()));
 		
-		//	     b) Use a code flow analyser to get the arguments for each function that
-		//        we have found. Use a constant analyser to get the rest of the
-		//        information that we need.
 		if(func != null) {
 			// updateFpAnimation
 			Address entry = factory.getAddress(func.getAddress());

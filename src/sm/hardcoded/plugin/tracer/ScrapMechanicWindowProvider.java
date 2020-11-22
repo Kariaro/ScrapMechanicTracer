@@ -4,6 +4,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.util.Objects;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -12,7 +13,29 @@ import docking.widgets.filechooser.GhidraFileChooser;
 import docking.widgets.filechooser.GhidraFileChooserMode;
 import ghidra.framework.plugintool.ComponentProviderAdapter;
 
+/**
+ * This class is the window provider for the ScrapMechanicTracer GhidraPlugin.
+ * 
+ * @author Admin
+ * @date 2020-11-22
+ */
 public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
+	/**
+	 * Returns the default plugin home directory.
+	 * @return the default plugin home directory
+	 */
+	private static final String getPluginHome() {
+		String userHome = System.getProperty("user.home");
+		File pluginHome = new File(userHome, "ScrapMechanicGhidraPlugin");
+		if(!pluginHome.exists()) pluginHome.mkdir();
+		
+		File tracePath = new File(pluginHome, "traces");
+		if(!tracePath.exists()) tracePath.mkdir();
+		
+		return pluginHome.getAbsolutePath();
+	}
+	
+	
 	private final ScrapMechanicPlugin plugin;
 	private GhidraFileChooser fileChooser;
 	
@@ -42,23 +65,19 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 	private JComboBox<Integer> comboBox_searchDepth;
 	
 	public void setStatusText(String string) {
-		if(label_status != null)
-			label_status.setText(string);
+		label_status.setText(string);
 	}
 	
 	public void setVersionText(String string) {
-		if(label_version != null)
-			label_version.setText(string);
+		label_version.setText(Objects.toString(string, ""));
 	}
 	
 	public void setFunctionsText(String string) { 
-		if(label_functions != null)
-			label_functions.setText(string);
+		label_functions.setText(string);
 	}
 	
 	public void setScanEnabled(boolean b) {
-		if(btnScan != null)
-			btnScan.setEnabled(b);
+		btnScan.setEnabled(b);
 	}
 	
 	public void setResetScanEnabled(boolean b) {
@@ -66,7 +85,6 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 		// TODO: Update the bookmark manager gui when you press the reset scan button.
 		// TODO: Update the button when the bookmark manager has changed.
 		
-		//if(btnResetScan != null)
 		//    btnResetScan.setEnabled(b);
 	}
 	
@@ -77,8 +95,6 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 	}
 	
 	public void setProgressBar(double percentage, int max) {
-		if(progressBar == null) return;
-		
 		int value = (int)(percentage * 10000);
 		if(value < 0) value = 0;
 		if(value > 10000) value = 10000;
@@ -88,8 +104,6 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 	}
 	
 	public void writeLog(Object caller, String string) {
-		if(textArea_logging == null) return;
-		
 		StringBuilder sb = new StringBuilder();
 		sb.append(textArea_logging.getText());
 		
@@ -99,8 +113,7 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 	}
 	
 	public void clearLogger() {
-		if(textArea_logging != null)
-			textArea_logging.setText("");
+		textArea_logging.setText("");
 	}
 	
 	///////////////////////////////////////////////////
@@ -118,13 +131,10 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 	}
 	
 	public String getSavePath() {
-		if(textField_savePath == null) return null; // TODO: Default path
 		return textField_savePath.getText();
 	}
 	
 	public void setThreads(int threads) {
-		if(comboBox_threads == null) return;
-		
 		if(threads > comboBox_threads.getItemCount() + 1) {
 			threads = comboBox_threads.getItemCount() - 1;
 		}
@@ -133,8 +143,6 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 	}
 	
 	public void setSearchDepth(int searchDepth) {
-		if(comboBox_searchDepth == null) return;
-		
 		if(searchDepth > comboBox_searchDepth.getItemCount() + 1) {
 			searchDepth = comboBox_searchDepth.getItemCount() - 1;
 		}
@@ -143,7 +151,6 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 	}
 	
 	public void setSavePath(String savePath) {
-		if(textField_savePath == null) return;
 		textField_savePath.setText(getValidSavePath(savePath));
 	}
 	
@@ -162,17 +169,6 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 		}
 		
 		return savePath;
-	}
-	
-	private String getPluginHome() {
-		String userHome = System.getProperty("user.home");
-		File pluginHome = new File(userHome, "ScrapMechanicGhidraPlugin");
-		if(!pluginHome.exists()) pluginHome.mkdir();
-		
-		File tracePath = new File(pluginHome, "traces");
-		if(!tracePath.exists()) tracePath.mkdir();
-		
-		return pluginHome.getAbsolutePath();
 	}
 	
 	private void createComponent() {
@@ -225,7 +221,7 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 		gbc_lblVersion.gridy = 2;
 		panelInformation.add(lblVersion, gbc_lblVersion);
 		
-		label_version = new JLabel("0.4.6.578");
+		label_version = new JLabel("<none>");
 		GridBagConstraints gbc_lblNewLabel_13 = new GridBagConstraints();
 		gbc_lblNewLabel_13.anchor = GridBagConstraints.EAST;
 		gbc_lblNewLabel_13.insets = new Insets(0, 0, 5, 5);
@@ -241,7 +237,7 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 		gbc_lblFunctions.gridy = 3;
 		panelInformation.add(lblFunctions, gbc_lblFunctions);
 		
-		label_functions = new JLabel("1107");
+		label_functions = new JLabel("<none>");
 		GridBagConstraints gbc_label_1 = new GridBagConstraints();
 		gbc_label_1.insets = new Insets(0, 0, 0, 5);
 		gbc_label_1.anchor = GridBagConstraints.EAST;

@@ -1,28 +1,12 @@
-package sm.importer;
-
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.PrintStream;
+package sm.hardcoded.plugin.tracer;
 
 import ghidra.app.cmd.function.ApplyFunctionSignatureCmd;
-import ghidra.app.script.GhidraScript;
+import ghidra.app.cmd.function.CreateFunctionCmd;
 import ghidra.app.util.cparser.C.CParser;
-import ghidra.program.model.data.Category;
-import ghidra.program.model.data.DataType;
-import ghidra.program.model.data.DataTypeConflictHandler;
-import ghidra.program.model.data.DataTypeManager;
-import ghidra.program.model.data.ParameterDefinition;
-import ghidra.program.model.listing.Function;
-import ghidra.program.model.listing.FunctionSignature;
-import ghidra.program.model.listing.Parameter;
-import ghidra.program.model.listing.Program;
-import ghidra.program.model.symbol.SourceType;
-import ghidra.program.model.symbol.Symbol;
-import ghidra.program.model.symbol.SymbolIterator;
-import ghidra.program.model.symbol.SymbolTable;
-import sm.complex.ScrapMechanic;
-import sm.util.FunctionUtil;
-import sm.util.Util;
+import ghidra.program.model.data.*;
+import ghidra.program.model.listing.*;
+import ghidra.program.model.symbol.*;
+import ghidra.util.task.TaskMonitor;
 
 /**
  * This class imports the function signatures for each lua command.
@@ -33,7 +17,9 @@ import sm.util.Util;
  * @author HardCoded
  * @date 2020-11-22
  */
-public class Importer {
+class LuaFunctionImporter {
+	public static final String LIBRARY_NAME = "LUA51.DLL";
+	
 	public static final String LUA_STATE =
 		"typedef struct lua_State lua_State;";
 	
@@ -64,41 +50,28 @@ public class Importer {
 		{ "size_t", "typedef unsigned int size_t;" }
 	};
 	
-	private static DataTypeManager manager;
-	private static Category luaPath;
-	private static Category root;
+	private final ScrapMechanicPlugin plugin;
+	private DataTypeManager manager;
 	
-	public static void init(GhidraScript ghidra) throws Exception {
-		manager = ghidra.getCurrentProgram().getDataTypeManager();
-		root = manager.getRootCategory();
-		
-		if(!root.getName().equals(ScrapMechanic.ROOT_NAME)) {
-			// TODO: What if the executable is renamed at some point????
-			
-			throw new Exception("Invalid Executable Selected, Expected 'ScrapMechanic.exe' got '" + root.getName() + '"');
-		}
-		
-		loadDataTypes(ghidra);
-		loadFunctionSignatures(ghidra);
-		initDirectories(ghidra);
+	public LuaFunctionImporter(ScrapMechanicPlugin tool) {
+		this.plugin = tool;
 	}
 	
-	private static void initDirectories(GhidraScript ghidra) throws Exception {
-		String userHome = System.getProperty("user.home");
+	public void initialize() throws Exception {
+		Program currentProgram = plugin.getCurrentProgram();
+		if(currentProgram == null) return;
+		this.manager = currentProgram.getDataTypeManager();
 		
-		File path = new File(userHome, "ScrapMechanicTracer/traces");
-		if(!path.exists()) {
-			path.mkdirs();
-		}
+		loadDataTypes();
+		loadFunctionSignatures();
 	}
 	
-	private static boolean loadDataTypes(GhidraScript ghidra) throws Exception {
-		boolean hasChanged = false;
-		luaPath = root.getCategory("lua.h");
+	private void loadDataTypes() throws Exception {
+		Category root = manager.getRootCategory();
+		Category luaPath = root.getCategory("lua.h");
 		if(luaPath == null) {
-			System.out.println("Adding 'lua.h' category");
+			plugin.getWindow().writeLog(this, "Added 'lua.h' category");
 			luaPath = root.createCategory("lua.h");
-			hasChanged = true;
 		}
 		
 		for(String[] type : FUNCTIONS) {
@@ -107,18 +80,14 @@ public class Importer {
 			
 			DataType typePath = luaPath.getDataType(name);
 			if(typePath == null) {
-				System.out.println("Adding dataType '" + name + "'");
+				plugin.getWindow().writeLog(this, "Adding data type '" + name + "'");
 				
 				CParser parser = new CParser(manager);
 				DataType dataType = parser.parse(code);
 				dataType.setCategoryPath(luaPath.getCategoryPath());
 				luaPath.addDataType(dataType, DataTypeConflictHandler.DEFAULT_HANDLER);
-				
-				hasChanged = true;
 			}
 		}
-		
-		return hasChanged;
 	}
 	
 	private static final String[][] SIGNATURES = {
@@ -197,58 +166,57 @@ public class Importer {
 		{ "luaopen_string",			"int luaopen_string (lua_State* L);" },
 		{ "luaopen_table",			"int luaopen_table (lua_State* L);" },
 	};
-	private static boolean loadFunctionSignatures(GhidraScript ghidra) throws Exception {
-		boolean hasChanged = false;
-		
-		Program program = ghidra.getCurrentProgram();
+	
+	private void loadFunctionSignatures() throws Exception {
+		Program program = plugin.getCurrentProgram();
 		SymbolTable table = program.getSymbolTable();
 		
-		Symbol library = table.getLibrarySymbol(ScrapMechanic.LIBRARY_NAME);
+		Symbol library = table.getLibrarySymbol(LIBRARY_NAME);
 		if(library == null) {
-			throw new Exception("Failed to find the library '" + ScrapMechanic.LIBRARY_NAME + "'");
+			throw new Exception("Failed to find the library '" + LIBRARY_NAME + "'");
 		}
+		
+		
+		int totalChildren = table.getNumSymbols();
+		int currentIndex = 0;
+		
+		if(totalChildren == 0) totalChildren = 1;
+		plugin.getWindow().writeLog(this, "Updating function signatures");
+		plugin.getWindow().setProgressBar(0);
 		
 		SymbolIterator iterator = table.getChildren(library);
 		while(iterator.hasNext()) {
 			Symbol symbol = iterator.next();
-			
+
+			plugin.getWindow().setProgressBar(currentIndex / (0.0 + totalChildren));
 			String[] data = getFunctionInformation(symbol.getName());
 			if(data == null) {
-				System.out.println("Unimplemented lua function found '" + symbol.getName() + "'");
+				plugin.getWindow().writeLog(this, "Unimplemented lua function found '" + symbol.getName() + "'");
 				continue;
 			}
 			
 			CParser parser = new CParser(manager);
 			FunctionSignature signature = (FunctionSignature)parser.parse(data[1]);
-			boolean shouldUpdate = isDifferent(symbol, signature);
+			// boolean shouldUpdate = isDifferent(symbol, signature);
 			
-			if(shouldUpdate) {
-				System.out.println("Changing function signature '" + symbol.getName() + "' -> '" + data[1] + "'");
-				hasChanged = true;
-				
+			if(true) {
 				ApplyFunctionSignatureCmd cmd = new ApplyFunctionSignatureCmd(
 					symbol.getAddress(),
 					signature,
 					SourceType.USER_DEFINED,
-					false,
+					true,
 					false
 				);
 				
 				try {
-					cmd.applyTo(program, Util.getMonitor());
-				} catch(Throwable e) {
-					ByteArrayOutputStream bs = new ByteArrayOutputStream();
-					PrintStream stream = new PrintStream(bs);
-					e.printStackTrace(stream);
-					
-					byte[] bytes = bs.toByteArray();
-					System.out.println("Length: " + bytes.length);
-					System.out.println("String: " + new String(bytes, 0, Math.min(2048, bytes.length)));
+					cmd.applyTo(program);
+				} catch(Throwable t) {
+					t.printStackTrace();
 				}
 			}
 		}
 		
-		return hasChanged;
+		plugin.getWindow().setProgressBar(1);
 	}
 	
 	/**
@@ -260,41 +228,46 @@ public class Importer {
 	 * @return if there is any difference between the two function signatures.
 	 * @throws Exception
 	 */
-	private static boolean isDifferent(Symbol symbol, FunctionSignature type) throws Exception {
-		Function function = FunctionUtil.createExternalFunction(symbol.getAddress(), symbol.getName());
-		if(function == null || type == null) return false; // TODO: What do we do here?
+	@SuppressWarnings("unused")
+	private boolean isDifferent(Symbol symbol, FunctionSignature type) throws Exception {
+//		Function function = null;
 		
-		/*
-		if(symbol.getObject() instanceof Function) {
-			function = (Function)symbol.getObject();
-		} else {
-			throw new Exception("Symbol was not linked to a function ' " + symbol + " '");
-		}*/
-		
-		if(!function.getCallingConventionName().equals("__cdecl")) {
-			function.setCallingConvention("__cdecl");
-			return true;
-		}
-		
-		if(!function.getReturnType().isEquivalent(type.getReturnType())) return true;
-		
-		ParameterDefinition[] arguments = type.getArguments();
-		if(function.getParameterCount() != arguments.length) return true;
-		
-		Parameter[] params = function.getParameters();
-		for(int i = 0; i < params.length; i++) {
-			DataType target = arguments[i].getDataType();
-			DataType param = params[i].getDataType();
-			
-			if(!param.isEquivalent(target)) {
+		try {
+			CreateFunctionCmd cmd = new CreateFunctionCmd(symbol.getName(), symbol.getAddress(), null, SourceType.USER_DEFINED);
+			if(cmd.applyTo(plugin.getCurrentProgram(), TaskMonitor.DUMMY)) {
+//				function = plugin.getCurrentProgram().getListing().getFunctionAt(symbol.getAddress());
 				return true;
 			}
+		} catch(Exception e) {
+			return false;
 		}
 		
+//		if(function == null || type == null) return false;
+		
+//		if(!function.getCallingConventionName().equals("__cdecl")) {
+//			function.setCallingConvention("__cdecl");
+//			return true;
+//		}
+//		
+//		if(!function.getReturnType().isEquivalent(type.getReturnType())) return true;
+//		
+//		ParameterDefinition[] arguments = type.getArguments();
+//		if(function.getParameterCount() != arguments.length) return true;
+//		
+//		Parameter[] params = function.getParameters();
+//		for(int i = 0; i < params.length; i++) {
+//			DataType target = arguments[i].getDataType();
+//			DataType param = params[i].getDataType();
+//			
+//			if(!param.isEquivalent(target)) {
+//				return true;
+//			}
+//		}
+//		
 		return false;
 	}
 	
-	private static String[] getFunctionInformation(String label) {
+	private String[] getFunctionInformation(String label) {
 		for(String[] data : SIGNATURES) {
 			if(label.equals(data[0])) return data;
 		}

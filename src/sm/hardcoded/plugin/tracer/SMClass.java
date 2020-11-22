@@ -204,7 +204,17 @@ class SMClass {
 			return sb.toString();
 		}
 	}
-
+	
+	public Set<Function> getAllFunctions() {
+		Set<Function> set = new LinkedHashSet<>();
+		set.addAll(functions);
+		for(SMClass clazz : classes) {
+			set.addAll(clazz.getAllFunctions());
+		}
+		
+		return set;
+	}
+	
 	public Function getFunction(String name) {
 		for(Function func : functions) {
 			if(func.name.equals(name)) return func;
