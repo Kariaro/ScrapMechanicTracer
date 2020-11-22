@@ -42,6 +42,10 @@ public class SMContainerBuilder {
 	public SMContainerBuilder calculate() {
 		for(SMObject obj : list) {
 			String path = Util.readTerminatedString(obj.getName());
+			if(path == null) {
+				SMLogger.log("Failed to add path '%s'", path);
+				continue;
+			}
 			
 			SMClassObject clazz = container.addClass(path);
 			clazz.loadSettings(obj);
@@ -57,8 +61,8 @@ public class SMContainerBuilder {
 		String setstr = set.toString();
 		setstr = setstr.substring(1, setstr.length() - 1);
 		setstr = setstr.replace(", ", "\n");
-		System.out.println("Functions:");
-		System.out.println(setstr);
+		SMLogger.log("Functions:");
+		SMLogger.log(setstr);
 		
 		
 		//System.out.println(container);

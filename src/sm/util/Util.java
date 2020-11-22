@@ -76,7 +76,11 @@ public class Util {
 	}
 	
 	public static String readTerminatedString(Address addr) {
-		return readTerminatedString(addr, 256);
+		try {
+			return readTerminatedString(addr, 256);
+		} catch(Exception e) {
+			return null;
+		}
 	}
 	
 	public static String readTerminatedString(Address addr, int max_length) {

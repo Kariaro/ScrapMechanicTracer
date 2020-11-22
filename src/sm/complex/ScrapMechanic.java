@@ -13,9 +13,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 
 import ghidra.program.model.address.Address;
-import sm.SMContainer;
-import sm.SMContainerBuilder;
-import sm.SMFunctionObject;
+import sm.*;
 import sm.gui.SMDialog;
 import sm.importer.PointerFinder;
 import sm.util.CacheUtil;
@@ -108,27 +106,20 @@ public final class ScrapMechanic {
 						pointer = queue.poll();
 						if(pointer == null) break;
 						
-						// 006f76f0 -> destroy
-						//if(!pointer.addr.equals("006f76f0")) continue;
-						//if(!pointer.addr.equals("006e6850")) continue;
-						//if(!pointer.name.equals("harvestableCustomProjectileAttack")) continue;
-						
-						System.out.printf("[Worker ID#%d]: Exploring: %s\n", id, pointer.addr + " -> " + pointer.name + "( --- );");
+						SMLogger.log("[Worker ID#%d]: Exploring: %s -> %s ( --- );", id, pointer.addr, pointer.name);
 						AnalysedFunction fuzzed = explorer.evaluate(pointer.addr);
 						mappings.put(pointer.addr, fuzzed);
 						
 						monitor.incrementProgress(1);
 					}
 				} catch(Exception e) {
-					//System.out.println("000000000000000000>>>>>>> " + pointer.addr + ", " + pointer.name);
 					e.printStackTrace();
-					//Util.getMonitor().cancel();
 				}
 				
 				// THIS IS IMPORTANT
 				explorer.close();
 				
-				System.out.printf("[Worker ID#%d]: Done!\n", id);
+				SMLogger.log("[Worker ID#%d]: Done!", id);
 			});
 			thread.setName("Worker ID#" + id);
 			thread.start();
@@ -153,7 +144,7 @@ public final class ScrapMechanic {
 			object.setAnalysedFunction(fuzzed);
 			
 			if(TRACE && fuzzed != null) {
-				//System.out.println(object);
+				// SMLogger.log(object);
 			}
 		}
 		

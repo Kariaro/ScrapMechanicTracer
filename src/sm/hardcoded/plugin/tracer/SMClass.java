@@ -7,6 +7,7 @@ import java.util.Set;
  * 
  * @author HardCoded
  */
+// TODO: Maybe allow to print in alphabetical mode
 class SMClass {
 	protected Set<SMClass> classes;
 	protected Set<Function> functions;
@@ -85,7 +86,6 @@ class SMClass {
 		return function;
 	}
 	
-	// TODO: Maybe allow to print in alphabetical mode
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
@@ -203,5 +203,13 @@ class SMClass {
 			
 			return sb.toString();
 		}
+	}
+
+	public Function getFunction(String name) {
+		for(Function func : functions) {
+			if(func.name.equals(name)) return func;
+		}
+		
+		return null;
 	}
 }

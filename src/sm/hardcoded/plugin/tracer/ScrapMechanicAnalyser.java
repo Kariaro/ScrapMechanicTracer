@@ -5,9 +5,12 @@ import java.awt.datatransfer.Clipboard;
 import java.util.List;
 
 import docking.dnd.StringTransferable;
+import ghidra.app.cmd.disassemble.DisassembleCommand;
+import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressFactory;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.MemoryAccessException;
+import ghidra.util.Msg;
 
 class ScrapMechanicAnalyser {
 	private final ScrapMechanicPlugin plugin;
@@ -18,6 +21,7 @@ class ScrapMechanicAnalyser {
 	
 	private FunctionAnalyser functionAnalyser;
 	private ConstantAnalyser constantAnalyser;
+	private CodeSyntaxTreeAnalyser cstAnalyser;
 	private String errorMessage = "";
 	
 	public ScrapMechanicAnalyser(ScrapMechanicPlugin tool) {
@@ -29,6 +33,7 @@ class ScrapMechanicAnalyser {
 		
 		functionAnalyser = new FunctionAnalyser(tool);
 		constantAnalyser = new ConstantAnalyser(tool);
+		cstAnalyser = new CodeSyntaxTreeAnalyser(tool);
 	}
 	
 	public boolean startAnalysis() {
@@ -75,6 +80,7 @@ class ScrapMechanicAnalyser {
 		
 		SMClass table = new SMClass("sm");
 		
+		// Read all the functions and constants found in the table found in memory
 		for(SMDefinition object : objects) {
 			String name = programMemory.readTerminatedString(factory.getAddress(object.getName()));
 			SMClass klass = table.createClass(name);
@@ -82,11 +88,31 @@ class ScrapMechanicAnalyser {
 			constantAnalyser.analyseConstants(klass, object);
 		}
 		
+		
+		SMClass.Function func = table.getClass("localPlayer").getFunction("updateFpAnimation");
+		provider.writeLog(this, "Function -> " + (func == null ? null:func.getAddress()));
+		
+		if(func != null) {
+			// updateFpAnimation
+			Address entry = factory.getAddress(func.getAddress());
+			
+			// function updateFpAnimation( String, [Number, String], [Number, String], [Number, Boolean] ) min:2 max:4,
+			// function updateFpAnimation( String, [Number, String], [Number, String], [Number, Boolean] ) min:2 max:4,
+			
+			DisassembleCommand cmd = new DisassembleCommand(entry, null, true);
+			cmd.enableCodeAnalysis(false);
+			if(!cmd.applyTo(currentProgram)) {
+				Msg.warn(this, "Failed to disassemble memory at address '" + entry + "'");
+			}
+			
+			cstAnalyser.analyse(func);
+		}
+		
 		// Msg.debug(this, "\n" + table.toString());
 		
-		String string = table.toString();
-		Clipboard clip = Toolkit.getDefaultToolkit().getSystemClipboard();
-		clip.setContents(new StringTransferable(string), null);
+		//String string = table.toString();
+		//Clipboard clip = Toolkit.getDefaultToolkit().getSystemClipboard();
+		//clip.setContents(new StringTransferable(string), null);
 		
 		// Step 3:
 		//     Dump all the arguments and constants in a pretty format to the selected

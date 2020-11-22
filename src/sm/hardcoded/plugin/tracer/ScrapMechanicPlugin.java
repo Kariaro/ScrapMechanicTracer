@@ -43,23 +43,19 @@ public class ScrapMechanicPlugin extends ProgramPlugin implements FrontEndable {
 		super(tool, false, false);
 	}
 	
-	@Override
 	protected void programOpened(Program program) {
 		updateScanOptions();
 	}
 	
-	@Override
 	protected void programClosed(Program program) {
 		updateScanOptions();
 	}
 	
-	@Override
 	protected void programActivated(Program program) {
 		updateScanOptions();
 	}
 	
 	// TODO: Disallow the user to change the current program while the tracer is scanning.
-	@Override
 	protected boolean canClose() {
 		return !scanning;
 	}

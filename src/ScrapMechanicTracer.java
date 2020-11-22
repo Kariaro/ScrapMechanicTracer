@@ -95,7 +95,6 @@ public class ScrapMechanicTracer extends GhidraScript {
 				// Find all the structure pointers
 				PointerFinder.init(ScrapMechanicTracer.this);
 				
-				
 				// Start the application
 				long start = System.currentTimeMillis();
 				

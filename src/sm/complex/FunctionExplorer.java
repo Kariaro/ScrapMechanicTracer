@@ -27,6 +27,7 @@ import ghidra.program.model.pcode.Varnode;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.util.exception.InvalidInputException;
 import sm.SMFunctionObject;
+import sm.SMLogger;
 import sm.util.FunctionUtil;
 import sm.util.LuaUtil;
 import sm.util.Util;
@@ -141,7 +142,7 @@ public class FunctionExplorer implements Closeable {
 		}
 		*/
 		
-		if(TRACE) System.out.println("Addr: " + callAddress + ", " + function);
+		if(TRACE) SMLogger.log("Addr: %s, %s", callAddress, function);
 		if(function == null) return;
 		
 		DecompileResults result = decomp.decompileFunction(function, DECOMPILE_TIMEOUT, null);
@@ -153,7 +154,7 @@ public class FunctionExplorer implements Closeable {
 			 * This is because some functions take more than 30 seconds to
 			 * complete and they should probably be handled separatly.
 			 */
-			System.err.println("The generated HighFunction was null ! Error: " + result.getErrorMessage());
+			SMLogger.err("The generated HighFunction was null ! Error: %s", result.getErrorMessage());
 			return;
 		}
 		
@@ -186,19 +187,19 @@ public class FunctionExplorer implements Closeable {
 				Varnode[] nextParams = resolveParams(command, local, params);
 				
 				if(TRACE) {
-					System.out.printf("%s, CALL LUA51::%s\n", instAddress, function);
+					SMLogger.log("%s, CALL LUA51::%s", instAddress, function);
 					
 					for(int i = 0; i < nextParams.length; i++) {
 						Varnode node = nextParams[i];
-						System.out.printf("        args[%d]: %s\n", i, node);
+						SMLogger.log("        args[%d]: %s", i, node);
 					}
-					System.out.println();
+					SMLogger.log();
 				}
 				
 				processCommand(fuzzed, function, command, nextParams);
 			} else if(depth < DECOMPILE_MAX_DEPTH) {
 				if(TRACE) {
-					System.out.println("---------------------------------");
+					SMLogger.log("---------------------------------");
 				}
 				
 				// If this is set, the function will compute values downwards.
@@ -215,9 +216,9 @@ public class FunctionExplorer implements Closeable {
 				 */
 				if(instIndex == 0) {
 					if(TRACE) {
-						System.out.printf("        : %s, %s\n", instAddress, inst);
-						System.out.printf("            : Calling Function: %s\n", command.getInput(0), callAddress);
-						System.out.println();
+						SMLogger.log("        : %s, %s", instAddress, inst);
+						SMLogger.log("            : Calling Function: %s", command.getInput(0), callAddress);
+						SMLogger.log();
 					}
 					
 					traverse = true;
@@ -292,13 +293,13 @@ public class FunctionExplorer implements Closeable {
 					//
 					
 					if(TRACE) {
-						System.out.printf("%s, %s\n", instAddress, inst);
+						SMLogger.log("%s, %s", instAddress, inst);
 						for(int i = 0; i < nextParams.length; i++) {
 							Varnode node = nextParams[i];
-							System.out.printf("        args[%d]: %s\n", i, node);
+							SMLogger.log("        args[%d]: %s", i, node);
 						}
-						System.out.println();
-						System.out.println("Test: " + DECOMPILE_MAX_DEPTH + ", " + depth);
+						SMLogger.log();
+						SMLogger.log("Test: %s, %s", DECOMPILE_MAX_DEPTH, depth);
 					}
 					
 					enterFunction(fuzzed, callAddress, depth + 1, nextParams);
@@ -315,18 +316,18 @@ public class FunctionExplorer implements Closeable {
 		
 		for(int i = 1; i < command.getNumInputs(); i++) {
 			Varnode node = command.getInput(i);
-			// System.out.printf("        input[%d]: %s\n", i, node);
+			// SMLogger.log("        input[%d]: %s", i, node);
 
 			// TODO: This code is duplicated!
 			HighVariable hv = node.getHigh();
 			if(hv != null) {
-				// System.out.printf("          storage: %s\n", hv.getStorage());
-				// System.out.printf("          name: %s\n", hv.getName());
+				// SMLogger.log("          storage: %s", hv.getStorage());
+				// SMLogger.log("          name: %s", hv.getName());
 				
 				for(int k = 0; k < Math.min(params.length, inputs.length); k++) {
 					Parameter param = params[k];
 					if(param.getName().equals(hv.getName())) {
-						// System.out.printf("        RESULT[%d]: %s\t -> %s\n", k, param, inputs[k]);
+						// SMLogger.log("        RESULT[%d]: %s\t -> %s", k, param, inputs[k]);
 						result[i - 1] = inputs[k];
 						break;
 					}
@@ -336,22 +337,22 @@ public class FunctionExplorer implements Closeable {
 			// TODO: For how long do we need to traverse this????
 			PcodeOp op = node.getDef();
 			if(op != null && op.getNumInputs() > 0) {
-				// System.out.printf("          op: %s\n", op);
-				// System.out.printf("          op: %s\n", op.getInput(0));
+				// SMLogger.log("          op: %s", op);
+				// SMLogger.log("          op: %s", op.getInput(0));
 				
 				Varnode node_2 = op.getInput(0);
 				if(node_2 != null) {
 					HighVariable hv_2 = node_2.getHigh();
 					if(hv_2 != null) {
 						// TODO: This code is duplicated!
-						// System.out.printf("            storage: %s\n", hv_2.getStorage());
-						// System.out.printf("            name: %s\n", hv_2.getName());
+						// SMLogger.log("            storage: %s", hv_2.getStorage());
+						// SMLogger.log("            name: %s", hv_2.getName());
 						
 						for(int k = 0; k < Math.min(params.length, inputs.length); k++) {
 							Parameter param = params[k];
 							
 							if(param.getName().equals(hv_2.getName())) {
-								// System.out.printf("        RESULT[%d]: %s\t -> %s\n", k, param, inputs[k]);
+								// SMLogger.log("        RESULT[%d]: %s\t -> %s", k, param, inputs[k]);
 								result[i - 1] = inputs[k];
 								break;
 							}
@@ -378,12 +379,12 @@ public class FunctionExplorer implements Closeable {
 		}
 		
 		/*
-		System.out.println("       RESULTS:");
+		SMLogger.log("       RESULTS:");
 		for(int i = 0; i < result.length; i++) {
 			Varnode node = result[i];
-			System.out.printf("        result[%d]: %s\n", i, node);
+			SMLogger.log("        result[%d]: %s", i, node);
 		}
-		System.out.println();
+		SMLogger.log();
 		*/
 		
 		return result;
@@ -407,8 +408,8 @@ public class FunctionExplorer implements Closeable {
 			{
 				AddressFactory factory = Util.getScript().getAddressFactory();
 				for(PcodeBlockBasic basic : set.getBasicBlocks()) {
-					//System.out.println("  start = " + basic.getStart());
-					//System.out.println("  stop  = " + basic.getStop());
+					//SMLogger.log("  start = " + basic.getStart());
+					//SMLogger.log("  stop  = " + basic.getStop());
 					
 					ranges.add(factory.getAddressSet(basic.getStart(), basic.getStop()));
 				}
@@ -421,7 +422,7 @@ public class FunctionExplorer implements Closeable {
 				while(inst != null) {
 					if(!range.contains(inst.getAddress())) break;
 					
-					// System.out.printf("%s, %s\n", inst.getAddress(), inst);
+					// SMLogger.log("%s, %s", inst.getAddress(), inst);
 					
 					if(CALL.equals(inst.getMnemonicString())) {
 						list.add(inst);
@@ -431,19 +432,19 @@ public class FunctionExplorer implements Closeable {
 				}
 			}
 			
-			if(TRACE) System.out.println("View: " + view);
+			if(TRACE) SMLogger.log("View: %s", view);
 			
 			Iterator<AddressRange> memory = view.iterator();
 			while(memory.hasNext()) {
 				AddressRange range = memory.next();
-				if(TRACE) System.out.println("Range: " + range);
+				if(TRACE) SMLogger.log("Range: %s", range);
 				
 				Instruction inst = Util.getInstructionAt(range.getMinAddress());
 				
 				while(inst != null) {
 					if(!range.contains(inst.getAddress())) break;
 					
-					//System.out.printf("%s, %s\n", inst.getAddress(), inst);
+					// SMLogger.log("%s, %s", inst.getAddress(), inst);
 					
 					if(CALL.equals(inst.getMnemonicString())) {
 						if(!list.contains(inst)) {
@@ -462,7 +463,7 @@ public class FunctionExplorer implements Closeable {
 		while(inst != null) {
 			if(!Util.isInside(inst, set)) break;
 			
-			System.out.printf("%s, %s\n", inst.getAddress(), inst);
+			SMLogger.log("%s, %s", inst.getAddress(), inst);
 			
 			if(CALL.equals(inst.getMnemonicString())) {
 				list.add(inst);
@@ -478,7 +479,7 @@ public class FunctionExplorer implements Closeable {
 	private boolean checkArgError(AnalysedFunction fuzzed, PcodeOpAST command, Varnode[] newParams) {
 		if(newParams.length < 3) return false;
 		
-		//System.out.println("      : len = " + newParams.length);
+		// SMLogger.log("      : len = %s", newParams.length);
 		
 		Varnode last = newParams[2];
 		if(last == null || !last.isRegister()) return false;
@@ -488,9 +489,9 @@ public class FunctionExplorer implements Closeable {
 		if(op == null || !op.getMnemonic().equals(CALL)) return false;
 		
 		Varnode addr = op.getInput(0);
-		//System.out.println("      : " + last);
-		//System.out.println("          : " + op);
-		//System.out.println("          : addr = " + addr);
+		// SMLogger.log("      : " + last);
+		// SMLogger.log("          : " + op);
+		// SMLogger.log("          : addr = " + addr);
 		
 		Address call_addr = addr.getAddress();
 		if(!LuaUtil.isLuaPointer(call_addr)) return false;
@@ -509,9 +510,9 @@ public class FunctionExplorer implements Closeable {
 		
 		if(msg.equals("%s expected, got %s")) {
 			if(TRACE) {
-				System.out.println("            msg:  \"" + msg + "\"");
-				System.out.println("            type: \"" + type + "\"");
-				System.out.println("            num: " + newParams[1].getOffset());
+				SMLogger.log("            msg:  \"%s\"", msg);
+				SMLogger.log("            type: \"%s\"", type);
+				SMLogger.log("            num: %s", newParams[1].getOffset());
 			}
 			long index = newParams[1].getOffset();
 			
@@ -527,11 +528,11 @@ public class FunctionExplorer implements Closeable {
 	private boolean checkLuaError(AnalysedFunction fuzzed, PcodeOpAST command, Varnode[] newParams) {
 		if(command.getNumInputs() < 4) return false;
 		
-		//System.out.println("Testing : " + command);
+		// SMLogger.log("Testing : %s", command);
 		
 		//for(int i = 1; i < command.getNumInputs(); i++) {
-		//Varnode input = command.getInput(i);
-		//System.out.printf("        [%d]: %s\n", i, input);
+		//	Varnode input = command.getInput(i);
+		//	SMLogger.log("        [%d]: %s", i, input);
 		//}
 		
 		//System.out.println();
@@ -540,11 +541,11 @@ public class FunctionExplorer implements Closeable {
 		
 		for(int i = 2; i < 4; i++) {
 			Varnode input = command.getInput(i);
-			if(TRACE) System.out.printf("        [%d]: %s\n", i, input);
+			if(TRACE) SMLogger.log("        [%d]: %s", i, input);
 			if(input == null) continue;
 			
 			HighVariable hv = input.getHigh();
-			if(TRACE) System.out.printf("          high: %s\n", hv.getName());
+			if(TRACE) SMLogger.log("          high: %s", hv.getName());
 			
 			int count = 0;
 			Varnode[] mem = hv.getInstances();
@@ -553,7 +554,7 @@ public class FunctionExplorer implements Closeable {
 				PcodeOp op = m.getDef();
 				if(op == null) continue;
 				
-				if(TRACE) System.out.printf("              [%d]: %s    %s\n", j, op, op.getInput(0).getDef());
+				if(TRACE) SMLogger.log("              [%d]: %s    %s", j, op, op.getInput(0).getDef());
 				
 				if(COPY.equals(op.getMnemonic())) {
 					msgCount[(i - 2) * 2 + (count++)] = op;
@@ -566,19 +567,19 @@ public class FunctionExplorer implements Closeable {
 		
 		for(int i = 0; i < 4; i++) {
 			if(msgCount[i] == null) return false;
-			if(TRACE) System.out.printf("        [%d]: %s\n", i, msgCount[i]);
+			if(TRACE) SMLogger.log("        [%d]: %s", i, msgCount[i]);
 		}
 		
 		// Read message
 		for(int i = 0; i < 2; i++) {
-			if(TRACE) System.out.printf("        [%d]: %s\n", i, msgCount[i].getInput(0).getOffset());
+			if(TRACE) SMLogger.log("        [%d]: %s", i, msgCount[i].getInput(0).getOffset());
 			String str = Util.readTerminatedString(Util.getAddressFromLong(msgCount[i].getInput(0).getOffset()));
 			if(str == null) return false;
-			if(TRACE) System.out.printf("        [%d]: str = %s\n", i, str);
+			if(TRACE) SMLogger.log("        [%d]: str = %s", i, str);
 			
 			int args = Util.toSignedInt(msgCount[i + 2].getInput(0).getOffset());
 			
-			if(TRACE) System.out.printf("        [%d]: args = %s\n", i, args);
+			if(TRACE) SMLogger.log("        [%d]: args = %s", i, args);
 			if(str.startsWith("Expected %d arguments")) {
 				fuzzed.minimumArguments = args;
 				fuzzed.maximumArguments = args;
@@ -602,7 +603,7 @@ public class FunctionExplorer implements Closeable {
 				long index = nextParams[1].getOffset();
 				String str = getStringFromUnique(nextParams[2]);
 				if(TRACE) {
-					System.out.printf("  luaL_checkudata(lua_State, %d, \"%s\");\n", index, str);
+					SMLogger.log("  luaL_checkudata(lua_State, %d, \"%s\");", index, str);
 				}
 				
 				fuzzed.setArgument(index, str);
@@ -614,7 +615,7 @@ public class FunctionExplorer implements Closeable {
 				long index = Util.toSignedInt(Util.getPcodeVarnode(nextParams, 1).getOffset());
 				long type = Util.toSignedInt(Util.getPcodeVarnode(nextParams, 2).getOffset());
 				if(TRACE) {
-					System.out.printf("  luaL_checktype(lua_State, index = %d, type = %d);\n", index, type);
+					SMLogger.log("  luaL_checktype(lua_State, index = %d, type = %d);", index, type);
 				}
 				
 				fuzzed.setArgument(index, LuaUtil.getTypeNameFromId(type));
@@ -630,7 +631,7 @@ public class FunctionExplorer implements Closeable {
 				if(nextParams.length < 3) break;
 				String str = getStringFromUnique(nextParams[1]);
 				if(TRACE) {
-					System.out.printf("  luaL_error(lua_State, \"%s\");\n", str);
+					SMLogger.log("  luaL_error(lua_State, \"%s\");", str);
 				}
 				
 				if(str != null) {
@@ -698,18 +699,18 @@ public class FunctionExplorer implements Closeable {
 			for(int i = 1; i < nextParams.length; i++) {
 				Varnode input = nextParams[i];
 				if(input.isConstant()) {
-					System.out.printf("      [%d] %s\n", i, Util.toSignedInt(input.getOffset()));
+					SMLogger.log("      [%d] %s", i, Util.toSignedInt(input.getOffset()));
 				} else if(input.isUnique()) {
 					Varnode defnode = input.getDef().getInput(0);
 					String text = getStringFromUnique(defnode.getAddress());
 					
 					if(text != null) {
-						System.out.printf("      [%d] string = \"%s\"\n", i, text);
+						SMLogger.log("      [%d] string = \"%s\"", i, text);
 					} else {
-						System.out.printf("      [%d] %s   addr = %s\n", i, input, defnode);
+						SMLogger.log("      [%d] %s   addr = %s", i, input, defnode);
 					}
 				} else {
-					System.out.printf("      [%d] %s\n", i, input);
+					SMLogger.log("      [%d] %s", i, input);
 					
 				}
 			}
