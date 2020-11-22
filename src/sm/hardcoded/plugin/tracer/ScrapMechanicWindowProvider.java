@@ -83,10 +83,6 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 		if(value < 0) value = 0;
 		if(value > 10000) value = 10000;
 		
-		// int display = (int)(percentage * max);
-		// if(display < 0) display = 0;
-		// if(display > max) display = max;
-		
 		progressBar.setValue(value);
 		progressBar.setString((value / 100) + " %");
 	}

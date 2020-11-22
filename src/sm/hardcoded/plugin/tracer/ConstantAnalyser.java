@@ -10,7 +10,7 @@ class ConstantAnalyser {
 		plugin = tool;
 	}
 	
-	public void analyseConstants(SMClass klass, SMDefinition definiton) {
+	public void analyseConstants(SMClass clazz, SMDefinition definiton) {
 		Program currentProgram = plugin.getCurrentProgram();
 		if(currentProgram == null) return;
 		
@@ -27,7 +27,7 @@ class ConstantAnalyser {
 					
 					Address funcAddr = programMemory.readAddress(address.add(4));
 					String name = programMemory.readTerminatedString(nameAddr);
-					klass.createConstant(funcAddr.toString(), name, null);
+					clazz.createConstant(funcAddr.toString(), name, null);
 					
 					address = address.add(8);
 				} while(max-- > 0);

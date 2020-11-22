@@ -4,13 +4,21 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressFactory;
 import ghidra.program.model.listing.Program;
 
+/**
+ * Analyse a {@code SMDefinition} and add bookmarks for each
+ * user and table function found. 
+ * 
+ * @date 2020-11-22
+ * @author HardCoded
+ *
+ */
 class FunctionAnalyser {
 	private final ScrapMechanicPlugin plugin;
 	public FunctionAnalyser(ScrapMechanicPlugin tool) {
 		plugin = tool;
 	}
 	
-	public void analyseFunctions(SMClass klass, SMDefinition definiton) {
+	public void analyseFunctions(SMClass clazz, SMDefinition definiton) {
 		Program currentProgram = plugin.getCurrentProgram();
 		if(currentProgram == null) return;
 		
@@ -27,7 +35,7 @@ class FunctionAnalyser {
 					
 					Address funcAddr = programMemory.readAddress(address.add(4));
 					String name = programMemory.readTerminatedString(nameAddr);
-					klass.createFunction(funcAddr.toString(), name, false);
+					clazz.createFunction(funcAddr.toString(), name, false);
 					
 					address = address.add(8);
 				} while(max-- > 0);
@@ -44,7 +52,7 @@ class FunctionAnalyser {
 					
 					Address funcAddr = programMemory.readAddress(address.add(4));
 					String name = programMemory.readTerminatedString(nameAddr);
-					klass.createFunction(funcAddr.toString(), name, true);
+					clazz.createFunction(funcAddr.toString(), name, true);
 					
 					address = address.add(8);
 				} while(max-- > 0);
@@ -61,7 +69,7 @@ class FunctionAnalyser {
 					
 					Address funcAddr = programMemory.readAddress(address.add(4));
 					String name = programMemory.readTerminatedString(nameAddr);
-					klass.createFunction(funcAddr.toString(), name, false);
+					clazz.createFunction(funcAddr.toString(), name, false);
 					
 					address = address.add(8);
 				} while(max-- > 0);

@@ -1,4 +1,4 @@
-# ScrapMechanicTracer
+# ScrapMechanicTracer & API Documentation
 
 This is a plugin for ghidra and was created to make modding easier for the game ScrapMechanic.
 Because most commands are not documented this plugin was made to get all the function arguments
@@ -9,13 +9,18 @@ understand the code flow of each function to reverseengineer the call stack.
 
 This plugin is aimed to work on every version of ScrapMechanic without any problems. (Tested 0.4.0 - 0.4.6)
 
-## Installing
 
-TODO
+## Pre made traces
 
-
+I've run some traces before and they can be used to find specific functions for a modding idea.
+[Traces](../master/res/traces).
 
 
 ## Usage
 Specify the amount of threads you want the analyser to use and the maximum depth it's allowed to search.
 After that you press **Scan** and it will dump the trace to the selected **Trace Save Path**.
+
+
+## Installing & Soon will maybe* add more images and make this doc better. 
+
+TODO Will maybe have a 50% working plugin 2021.

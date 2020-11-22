@@ -12,6 +12,12 @@ import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.util.Msg;
 
+/**
+ * Used to analsyse a scrap mechanic executable.
+ * 
+ * @date 2020-11-22
+ * @author HardCoded
+ */
 class ScrapMechanicAnalyser {
 	private final ScrapMechanicPlugin plugin;
 	
@@ -55,7 +61,6 @@ class ScrapMechanicAnalyser {
 		// Step 1:
 		//     Find all the strings and functions that registers
 		//     the different lua elements.
-		
 		long startTime = System.currentTimeMillis();
 		
 		try {
@@ -73,25 +78,22 @@ class ScrapMechanicAnalyser {
 		// Step 2:
 		//     a) Load all the functions and constants that are we have found
 		//        and add them to our own table.
-		//
-		//     b) Use a code flow analyser to get the arguments for each function that
-		//        we have found. Use a constant analyser to get the rest of the
-		//        information that we need.
-		
 		SMClass table = new SMClass("sm");
 		
 		// Read all the functions and constants found in the table found in memory
 		for(SMDefinition object : objects) {
 			String name = programMemory.readTerminatedString(factory.getAddress(object.getName()));
-			SMClass klass = table.createClass(name);
-			functionAnalyser.analyseFunctions(klass, object);
-			constantAnalyser.analyseConstants(klass, object);
+			SMClass clazz = table.createClass(name);
+			functionAnalyser.analyseFunctions(clazz, object);
+			constantAnalyser.analyseConstants(clazz, object);
 		}
-		
 		
 		SMClass.Function func = table.getClass("localPlayer").getFunction("updateFpAnimation");
 		provider.writeLog(this, "Function -> " + (func == null ? null:func.getAddress()));
 		
+		//	     b) Use a code flow analyser to get the arguments for each function that
+		//        we have found. Use a constant analyser to get the rest of the
+		//        information that we need.
 		if(func != null) {
 			// updateFpAnimation
 			Address entry = factory.getAddress(func.getAddress());
@@ -110,9 +112,9 @@ class ScrapMechanicAnalyser {
 		
 		// Msg.debug(this, "\n" + table.toString());
 		
-		//String string = table.toString();
-		//Clipboard clip = Toolkit.getDefaultToolkit().getSystemClipboard();
-		//clip.setContents(new StringTransferable(string), null);
+		String string = table.toString();
+		Clipboard clip = Toolkit.getDefaultToolkit().getSystemClipboard();
+		clip.setContents(new StringTransferable(string), null);
 		
 		// Step 3:
 		//     Dump all the arguments and constants in a pretty format to the selected

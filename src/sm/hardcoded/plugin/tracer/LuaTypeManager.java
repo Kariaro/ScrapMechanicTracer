@@ -40,7 +40,6 @@ class LuaTypeManager {
 	private void addType(String name, int id) {
 		Type type = new Type(name, id);
 		if(types.contains(type)) {
-			// Msg.warn(this, "Tried to add the same type twice: " + type);
 			return;
 		}
 		
@@ -61,13 +60,10 @@ class LuaTypeManager {
 		
 		plugin.getWindow().writeLog(this, "Found " + size + " lua type" + (size == 1 ? "":"s"));
 	}
-	// TODO: Should we really bookmark these?
+	
 	public void registerType(String typeAddress) {
 		Program program = plugin.getCurrentProgram();
-		if(program == null) {
-			// throw some error maybe?
-			return;
-		}
+		if(program == null) return;
 		
 		AddressFactory factory = program.getAddressFactory();
 		
@@ -103,28 +99,17 @@ class LuaTypeManager {
 			this.id = id;
 		}
 		
-		public String getName() {
-			return name;
-		}
+		public String getName() { return name; }
+		public int getId() { return id; }
+		public int hashCode() { return name.hashCode(); }
 		
-		public int getId() {
-			return id;
-		}
-		
-		@Override
-		public int hashCode() {
-			return name.hashCode();
-		}
-		
-		@Override
 		public boolean equals(Object obj) {
 			if(obj == null || !(obj instanceof Type)) return false;
 			return name.equals(((Type)obj).name);
 		}
 		
-		@Override
 		public String toString() {
-			return new StringBuilder().append("(name = '").append(name).append("' id = ").append(Integer.toHexString(id)).append(")").toString();
+			return "(name = '" + name + "' id = " + Integer.toHexString(id) + ")";
 		}
 	}
 }

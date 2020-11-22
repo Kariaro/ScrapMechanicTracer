@@ -55,7 +55,6 @@ public class ScrapMechanicPlugin extends ProgramPlugin implements FrontEndable {
 		updateScanOptions();
 	}
 	
-	// TODO: Disallow the user to change the current program while the tracer is scanning.
 	protected boolean canClose() {
 		return !scanning;
 	}
@@ -121,7 +120,6 @@ public class ScrapMechanicPlugin extends ProgramPlugin implements FrontEndable {
 				transactionId = currentProgram.startTransaction("ScrapMechanicPlugin - Scan");
 				
 				boolean result = analyser.startAnalysis();
-				
 				if(!result) {
 					Msg.showError(this, provider.getComponent(), "Start analysis failed", analyser.getLastError());
 				}

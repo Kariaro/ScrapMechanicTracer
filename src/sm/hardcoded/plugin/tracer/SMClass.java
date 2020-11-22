@@ -4,10 +4,11 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
+ * A class object for all sm objects.
  * 
+ * @date 2020-11-22
  * @author HardCoded
  */
-// TODO: Maybe allow to print in alphabetical mode
 class SMClass {
 	protected Set<SMClass> classes;
 	protected Set<Function> functions;
@@ -49,24 +50,21 @@ class SMClass {
 			
 			int index = name.indexOf('.');
 			if(index < 0) {
-				// "sm.table" -> "table"
 				if(find != null) return find;
 				
-				SMClass klass = new SMClass(name);
-				classes.add(klass);
-				return klass;
+				SMClass clazz = new SMClass(name);
+				classes.add(clazz);
+				return clazz;
 			} else {
-				// "sm.table.test" -> "table.test"
-				
-				SMClass klass;
+				SMClass clazz;
 				if(find != null) {
-					klass = find;
+					clazz = find;
 				} else {
-					klass = new SMClass(name.substring(0, index));
-					classes.add(klass);
+					clazz = new SMClass(name.substring(0, index));
+					classes.add(clazz);
 				}
 				
-				return klass.createClass(name);
+				return clazz.createClass(name);
 			}
 		}
 		
@@ -198,6 +196,8 @@ class SMClass {
 			
 			// TODO: Argument length 'min:4 max:5' 'args:4'
 			if(minArgs == null || maxArgs == null) {
+				
+			} else {
 				
 			}
 			

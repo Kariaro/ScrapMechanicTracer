@@ -8,10 +8,10 @@ import ghidra.program.model.listing.*;
 
 /**
  * The bookmark system that ghidra provides can be used to label all the data
- * that we need to keep track of.<br>
+ * that we need to keep track of.
  * 
- * This class is a simplified implementation of the build in BookmarkManager that
- * will store important pointers.
+ * <p>This class is a simplified implementation of the build in BookmarkManager
+ * that will store important pointers.
  * 
  * @author HardCoded
  */
@@ -100,8 +100,6 @@ class ScrapMechanicBookmarkManager {
 		
 		BookmarkManager manager = program.getBookmarkManager();
 		if(manager == null) return false;
-		
-		// TODO: Maybe add a yes no dialog so that we do not accidentally remove all the bookmarks
 		
 		int transactionId = program.startTransaction("ScrapMechanicPlugin - ResetScanData");
 		BookmarkType type = getBookmarkType(manager);

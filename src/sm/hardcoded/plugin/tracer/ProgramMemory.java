@@ -9,6 +9,12 @@ import ghidra.program.model.mem.Memory;
 import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.mem.MemoryBlock;
 
+/**
+ * Reads the full content of a ghidra program and caches it.
+ * 
+ * @date 2020-11-22
+ * @author HardCoded
+ */
 class ProgramMemory {
 	private final ScrapMechanicPlugin plugin;
 	
@@ -127,7 +133,7 @@ class ProgramMemory {
 		return false;
 	}
 	
-	// NOTE - If a string overlaps multiple memoryblocks than this might be a problem :&
+	// note: If a string overlaps multiple memoryblocks than this might be a problem :&
 	public String readTerminatedString(Address addr) { return readTerminatedString(addr, 256); }
 	public String readTerminatedString(Address addr, int maxLength) {
 		for(int i = 0; i < memory_start.length; i++) {

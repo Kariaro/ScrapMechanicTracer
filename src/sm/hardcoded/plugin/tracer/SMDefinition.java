@@ -129,7 +129,7 @@ class SMDefinition {
 	@Override
 	public String toString() {
 		return new StringBuilder()
-			.append("SMObject {")
+			.append("SMDefinition {")
 			.append(" base = ").append(basePointerAddress).append(",")
 			.append(" func = ").append(loadFunctionAddress).append(",")
 			
