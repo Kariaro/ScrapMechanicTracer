@@ -58,6 +58,7 @@ public class SMObject implements Serializable {
 	/**
 	 * @return The function this object belongs to
 	 */
+	@SuppressWarnings("deprecation")
 	public Function getFunction() {
 		return Util.getFunctionAt(loadFunctionAddress);
 	}

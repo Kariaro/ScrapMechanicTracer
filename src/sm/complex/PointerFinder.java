@@ -1,4 +1,4 @@
-package sm.importer;
+package sm.complex;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -9,7 +9,6 @@ import ghidra.app.script.GhidraScript;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.mem.Memory;
 import ghidra.program.model.mem.MemoryBlock;
-import sm.complex.ScrapMechanic;
 import sm.util.SMUtil;
 import sm.util.Util;
 

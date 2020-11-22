@@ -20,9 +20,7 @@ import ghidra.program.model.pcode.PcodeOp;
 import ghidra.program.model.pcode.PcodeOpAST;
 import ghidra.program.model.pcode.Varnode;
 import ghidra.util.task.TaskMonitor;
-import sm.gui.SMDialog;
-
-// TODO: Remove unnecessary functions
+import sm.SMDialog;// TODO: Remove unnecessary functions
 public class Util {
 	private static GhidraScript SCRIPT;
 	private static SMDialog DIALOG;

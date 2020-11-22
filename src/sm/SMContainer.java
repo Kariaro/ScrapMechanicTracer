@@ -17,7 +17,6 @@ public class SMContainer implements Serializable {
 	
 	public Set<SMFunctionObject> getAllFunctions() {
 		Set<SMFunctionObject> set = new HashSet<>();
-		// classes.stream().forEach((object) -> set.addAll(object.getAllFunctions()));
 		
 		for(SMClassObject object : classes) {
 			set.addAll(object.getAllFunctions());

@@ -1,12 +1,14 @@
 package sm.hardcoded.plugin.tracer;
 
 import ghidra.app.cmd.function.ApplyFunctionSignatureCmd;
+import ghidra.app.cmd.function.CreateExternalFunctionCmd;
 import ghidra.app.cmd.function.CreateFunctionCmd;
 import ghidra.app.util.cparser.C.CParser;
 import ghidra.program.model.data.*;
-import ghidra.program.model.listing.*;
+import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.FunctionSignature;
+import ghidra.program.model.listing.Program;
 import ghidra.program.model.symbol.*;
-import ghidra.util.task.TaskMonitor;
 
 /**
  * This class imports the function signatures for each lua command.
@@ -196,23 +198,12 @@ class LuaFunctionImporter {
 			}
 			
 			CParser parser = new CParser(manager);
-			FunctionSignature signature = (FunctionSignature)parser.parse(data[1]);
-			// boolean shouldUpdate = isDifferent(symbol, signature);
+			FunctionSignature signature = (FunctionSignature)parser.parse("_cdecl " + data[1]);
 			
-			if(true) {
-				ApplyFunctionSignatureCmd cmd = new ApplyFunctionSignatureCmd(
-					symbol.getAddress(),
-					signature,
-					SourceType.USER_DEFINED,
-					true,
-					false
-				);
-				
-				try {
-					cmd.applyTo(program);
-				} catch(Throwable t) {
-					t.printStackTrace();
-				}
+			try {
+				applySignature(symbol, signature);
+			} catch(Exception e) {
+				e.printStackTrace();
 			}
 		}
 		
@@ -228,27 +219,27 @@ class LuaFunctionImporter {
 	 * @return if there is any difference between the two function signatures.
 	 * @throws Exception
 	 */
-	@SuppressWarnings("unused")
-	private boolean isDifferent(Symbol symbol, FunctionSignature type) throws Exception {
-//		Function function = null;
+	private void applySignature(Symbol symbol, FunctionSignature signature) throws Exception {
+		CreateExternalFunctionCmd extCmd = new CreateExternalFunctionCmd(symbol);
+		extCmd.applyTo(plugin.getCurrentProgram());
 		
-		try {
-			CreateFunctionCmd cmd = new CreateFunctionCmd(symbol.getName(), symbol.getAddress(), null, SourceType.USER_DEFINED);
-			if(cmd.applyTo(plugin.getCurrentProgram(), TaskMonitor.DUMMY)) {
-//				function = plugin.getCurrentProgram().getListing().getFunctionAt(symbol.getAddress());
-				return true;
-			}
-		} catch(Exception e) {
-			return false;
+		CreateFunctionCmd cmd = new CreateFunctionCmd(symbol.getName(), symbol.getAddress(), null, SourceType.USER_DEFINED);
+		cmd.applyTo(plugin.getCurrentProgram());
+		
+		ApplyFunctionSignatureCmd applyCmd = new ApplyFunctionSignatureCmd(
+			symbol.getAddress(),
+			signature,
+			SourceType.USER_DEFINED,
+			false,
+			false
+		);
+		applyCmd.applyTo(plugin.getCurrentProgram());
+		
+		Function function= cmd.getFunction();
+		if(function != null) {
+			function.setCallingConvention("__cdecl");
 		}
 		
-//		if(function == null || type == null) return false;
-		
-//		if(!function.getCallingConventionName().equals("__cdecl")) {
-//			function.setCallingConvention("__cdecl");
-//			return true;
-//		}
-//		
 //		if(!function.getReturnType().isEquivalent(type.getReturnType())) return true;
 //		
 //		ParameterDefinition[] arguments = type.getArguments();
@@ -263,8 +254,6 @@ class LuaFunctionImporter {
 //				return true;
 //			}
 //		}
-//		
-		return false;
 	}
 	
 	private String[] getFunctionInformation(String label) {

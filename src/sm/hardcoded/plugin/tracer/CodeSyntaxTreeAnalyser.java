@@ -83,37 +83,6 @@ class CodeSyntaxTreeAnalyser {
 		} finally {
 			decomp.closeProgram();
 		}
-		
-		/*CodeSyntaxTree tree = createSyntaxTree(function);
-		
-		StringBuilder sb = new StringBuilder();
-		for(Instruction[] branch : tree.branches) {
-			if(branch.length > 0) {
-				sb.append("LAB_").append(branch[0].getAddress()).append(" :\n");
-			}
-			
-			for(Instruction inst : branch) {
-				sb.append("    ").append(inst).append("\n");
-			}
-		}
-		sb.append("--------------------------------------------------\n");
-		
-		String string = sb.toString();
-		Clipboard clip = Toolkit.getDefaultToolkit().getSystemClipboard();
-		clip.setContents(new StringTransferable(string), null);
-		
-		for(Instruction[] branch : tree.branches) {
-			if(branch.length < 1) continue;
-			
-			for(Instruction inst : branch) {
-				
-				if(isJumpInstruction(inst)) {
-					provider.writeLog(this, "JUMP: " + inst);
-					
-					
-				}
-			}
-		}*/
 	}
 	
 	private void process(CodeBlock block, PcodeOp op) {

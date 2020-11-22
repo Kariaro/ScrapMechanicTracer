@@ -1,4 +1,4 @@
-package sm.gui;
+package sm;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -36,6 +36,7 @@ import docking.widgets.filechooser.GhidraFileChooser;
 import docking.widgets.filechooser.GhidraFileChooserMode;
 import ghidra.app.script.GhidraScript;
 import ghidra.program.model.mem.MemoryBlock;
+import sm.SMDialog;
 import sm.util.CacheUtil;
 import sm.util.Util;
 

@@ -1,21 +1,12 @@
 package sm.complex;
 
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.io.*;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 
 import ghidra.program.model.address.Address;
 import sm.*;
-import sm.gui.SMDialog;
-import sm.importer.PointerFinder;
 import sm.util.CacheUtil;
 import sm.util.Util;
 
@@ -71,6 +62,7 @@ public final class ScrapMechanic {
 	 * This function uses a {@link ConcurrentLinkedQueue} to distribute decompile calls over multiple threads.
 	 * This function is blocking.
 	 */
+	@SuppressWarnings("unused")
 	public synchronized void evaluate() {
 		if(container == null) return;
 		if(evaluating) throw new IllegalAccessError("The evaluater is already running!");

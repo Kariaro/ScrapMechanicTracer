@@ -7,10 +7,10 @@
 
 import ghidra.app.script.GhidraScript;
 import ghidra.program.model.data.DataTypeManager;
+import sm.SMDialog;
+import sm.complex.Importer;
+import sm.complex.PointerFinder;
 import sm.complex.ScrapMechanic;
-import sm.gui.SMDialog;
-import sm.importer.Importer;
-import sm.importer.PointerFinder;
 import sm.util.CacheUtil;
 import sm.util.LuaUtil;
 import sm.util.Util;
@@ -47,11 +47,6 @@ public class ScrapMechanicTracer extends GhidraScript {
 		
 		// Initialize the cache
 		CacheUtil.init();
-		
-		if(true) {
-			//FunctionExplorer2 func = new FunctionExplorer2();
-			//return;
-		}
 		
 		// Initialize the util and dialog
 		SMDialog dialog = new SMDialog(this);

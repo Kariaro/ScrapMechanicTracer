@@ -1,4 +1,4 @@
-package sm.importer;
+package sm.complex;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -20,7 +20,6 @@ import ghidra.program.model.symbol.SourceType;
 import ghidra.program.model.symbol.Symbol;
 import ghidra.program.model.symbol.SymbolIterator;
 import ghidra.program.model.symbol.SymbolTable;
-import sm.complex.ScrapMechanic;
 import sm.util.FunctionUtil;
 import sm.util.Util;
 
