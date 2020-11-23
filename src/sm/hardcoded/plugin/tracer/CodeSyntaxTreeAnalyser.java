@@ -9,35 +9,85 @@ import ghidra.app.decompiler.DecompileResults;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressFactory;
 import ghidra.program.model.listing.*;
-import ghidra.program.model.pcode.*;
+import ghidra.program.model.pcode.HighFunction;
+import ghidra.program.model.pcode.PcodeBlockBasic;
+import ghidra.program.model.pcode.PcodeOp;
 import ghidra.util.Msg;
 import ghidra.util.task.TaskMonitor;
+import sm.hardcoded.plugin.tracer.CodeSyntaxTreeUtils.NodeFunction;
+import sm.hardcoded.plugin.tracer.CodeSyntaxTreeUtils.TracedFunction;
 
 class CodeSyntaxTreeAnalyser {
 	private final ScrapMechanicPlugin plugin;
+	private final CodeSyntaxTreeUtils utils;
+	
 	public CodeSyntaxTreeAnalyser(ScrapMechanicPlugin tool) {
-		plugin = tool;
+		this.plugin = tool;
+		this.utils = new CodeSyntaxTreeUtils(tool);
 	}
 	
 	public void analyse(SMClass.Function func) {
-		Program currentProgram = plugin.getCurrentProgram();
+		currentProgram = plugin.getCurrentProgram();
 		if(currentProgram == null) return;
 		
-		AddressFactory factory = currentProgram.getAddressFactory();
-		FunctionManager functionManager = currentProgram.getFunctionManager();
-		ScrapMechanicWindowProvider provider = plugin.getWindow();
-		Address entry = factory.getAddress(func.getAddress());
-		
-		
-		provider.writeLog(this, "Working on the address -> " + entry);
-		
-		if(!discoverCode(entry)) {
-			// Bad state
+		functionManager = currentProgram.getFunctionManager();
+		if(functionManager == null) {
+			Msg.error(this, "getFunctionManager() returned 'null'");
 			return;
 		}
+
+		AddressFactory factory = currentProgram.getAddressFactory();
+		Address address = factory.getAddress(func.getAddress());
+		provider = plugin.getWindow();
+		provider.writeLog(this, "Working on the address -> " + address);
 		
-		Function function = functionManager.getFunctionAt(entry);
+		// The max search depth
+		int search_depth = 2;
 		
+		// A unit that processes and solves a lua function
+		CodeSyntaxTreeUnit unit = new CodeSyntaxTreeUnit(utils);
+		
+		List<NodeFunction> list = List.of(new NodeFunction(address, true, 0));
+		for(int i = 0; i < search_depth; i++) {
+			// Debug
+			System.out.println("=======================================");
+			System.out.println("List: " + list);
+			
+			// Keep going lower and lower
+			list = discoverLua(unit, list);
+			
+			// If we dont have any more elements we end the loop 
+			if(list.isEmpty()) break;
+		}
+		
+		TracedFunction trace = unit.getTrace();
+		System.out.println(trace);
+	}
+	
+	private ScrapMechanicWindowProvider provider;
+	private FunctionManager functionManager;
+	private Program currentProgram;
+	
+	private List<NodeFunction> discoverLua(CodeSyntaxTreeUnit unit, List<NodeFunction> nodes) {
+		List<NodeFunction> result = new ArrayList<>();
+		
+		for(NodeFunction node : nodes) {
+			result.addAll(discoverLua(unit, node));
+		}
+		
+		return result;
+	}
+	
+	private List<NodeFunction> discoverLua(CodeSyntaxTreeUnit unit, NodeFunction node) {
+		if(!discoverCode(node.address)) {
+			provider.writeLog(this, "Failed to discover code at [ " + node.address + " ]");
+			return List.of();
+		}
+		
+		// Reset some variables
+		unit.clean();
+		
+		Function function = functionManager.getFunctionAt(node.address);
 		DecompInterface decomp = new DecompInterface();
 		try {
 			decomp.toggleCCode(false);
@@ -50,31 +100,10 @@ class CodeSyntaxTreeAnalyser {
 			}
 			
 			HighFunction hf = result.getHighFunction();
-			provider.writeLog(this, "HighFunction: " + hf);
-			provider.writeLog(this, "Printing Syntax Trees");
-			
-			// NOTE: function.getCalledFunctions(TaskMonitor.DUMMY);
-			// TODO: All calls to luaL_error that is made with a string and integer
-			//       check the strings content and check for argument boundaries.
-			List<CodeBlock> codeBlocks = new ArrayList<>();
-			
 			for(PcodeBlockBasic block : hf.getBasicBlocks()) {
-				codeBlocks.add(new CodeBlock(block));
-			}
-			
-//			for(CodeBlock block : codeBlocks) {
-//				System.out.println("------------------------- " + block);
-//				int index = 0;
-//				for(PcodeOp op : block.list) {
-//					System.out.printf("(%3d) %s\n", index++, op);
-//					if(index > 300) break;
-//				}
-//			}
-			
-			System.out.println("--------------------------------------------");
-			for(CodeBlock block : codeBlocks) {
-				for(PcodeOp op : block.list) {
-					process(block, op);
+				Iterator<PcodeOp> iter = block.getIterator();
+				while(iter.hasNext()) {
+					unit.process(hf, node, iter.next());
 				}
 			}
 		} catch(Exception e) {
@@ -83,33 +112,20 @@ class CodeSyntaxTreeAnalyser {
 		} finally {
 			decomp.closeProgram();
 		}
+		
+		return unit.getFunctionsCopy();
 	}
 	
-	private void process(CodeBlock block, PcodeOp op) {
-		int opcode = op.getOpcode();
-		Varnode output = op.getOutput();
-		
-		switch(opcode) {
-			case PcodeOp.CALL: {
-				Varnode address = op.getInput(0);
-				
-				System.out.printf("Calling ADDR:(%s) -> OUTPUT:(%s)\n", address, output);
-				
-				for(int i = 1; i < op.getNumInputs(); i++) {
-					System.out.printf("    %2d: %s\n", i, op.getInput(i));
-				}
-			}
-		}
-	}
 	
-	public CodeSyntaxTree createSyntaxTree(SMClass.Function func) {
-		Program currentProgram = plugin.getCurrentProgram();
-		if(currentProgram == null) return null;
-		
-		AddressFactory factory = currentProgram.getAddressFactory();
-		Address entry = factory.getAddress(func.getAddress());
-		return createSyntaxTree(entry);
-	}
+	
+//	public CodeSyntaxTree createSyntaxTree(SMClass.Function func) {
+//		Program currentProgram = plugin.getCurrentProgram();
+//		if(currentProgram == null) return null;
+//		
+//		AddressFactory factory = currentProgram.getAddressFactory();
+//		Address entry = factory.getAddress(func.getAddress());
+//		return createSyntaxTree(entry);
+//	}
 	
 	public CodeSyntaxTree createSyntaxTree(Address entry) {
 		Program currentProgram = plugin.getCurrentProgram();
@@ -330,20 +346,20 @@ class CodeSyntaxTreeAnalyser {
 		}
 	}
 	
-	private class CodeBlock {
-		private final PcodeBlockBasic block;
-		private final List<PcodeOp> list;
-		
-		public CodeBlock(PcodeBlockBasic block) {
-			List<PcodeOp> list = new ArrayList<>();
-			Iterator<PcodeOp> iter = block.getIterator();
-			while(iter.hasNext()) list.add(iter.next());
-			this.list = List.copyOf(list);
-			this.block = block;
-		}
-		
-		public String toString() {
-			return block.toString();
-		}
-	}
+//	private class CodeBlock {
+//		private final PcodeBlockBasic block;
+//		private final List<PcodeOp> list;
+//		
+//		public CodeBlock(PcodeBlockBasic block) {
+//			List<PcodeOp> list = new ArrayList<>();
+//			Iterator<PcodeOp> iter = block.getIterator();
+//			while(iter.hasNext()) list.add(iter.next());
+//			this.list = List.copyOf(list);
+//			this.block = block;
+//		}
+//		
+//		public String toString() {
+//			return block.toString();
+//		}
+//	}
 }

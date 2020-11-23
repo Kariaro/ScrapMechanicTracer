@@ -6,10 +6,12 @@ import java.util.List;
 
 import docking.dnd.StringTransferable;
 import ghidra.app.cmd.disassemble.DisassembleCommand;
+import ghidra.app.cmd.function.DecompilerParameterIdCmd;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressFactory;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.MemoryAccessException;
+import ghidra.program.model.symbol.SourceType;
 import ghidra.util.Msg;
 
 /**
@@ -124,6 +126,19 @@ class ScrapMechanicAnalyser {
 				Msg.warn(this, "Failed to disassemble memory at address '" + entry + "'");
 			}
 			
+			// Analyse all functions to load some code
+			cstAnalyser.analyse(func);
+			
+			// This is required to discover hidden parameters
+			DecompilerParameterIdCmd decompId = new DecompilerParameterIdCmd(
+				currentProgram.getMemory().getLoadedAndInitializedAddressSet(),
+				SourceType.ANALYSIS, true, true, 400
+			);
+			if(!decompId.applyTo(currentProgram)) {
+				Msg.warn(this, "Failed to apply DecompilerParameterIdCmd");
+			}
+			
+			// Analyse all functions and perform a full scan
 			cstAnalyser.analyse(func);
 		}
 		
