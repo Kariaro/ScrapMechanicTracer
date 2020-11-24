@@ -40,6 +40,7 @@ import sm.util.Util;
  * 
  * @author HardCoded
  */
+@Deprecated(forRemoval = true)
 public class FunctionExplorer implements Closeable {
 	// TODO: Cache functions by creating small auto functions
 	//       (a, b, c) -> List<Command> { processCommand(a, b, c); }

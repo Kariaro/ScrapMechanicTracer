@@ -32,6 +32,7 @@ import sm.util.Util;
  * @author HardCoded
  * @date 2020-11-22
  */
+@Deprecated(forRemoval = true)
 public class Importer {
 	public static final String LUA_STATE =
 		"typedef struct lua_State lua_State;";

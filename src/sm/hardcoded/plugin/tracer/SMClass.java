@@ -1,26 +1,27 @@
 package sm.hardcoded.plugin.tracer;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.*;
+
+import sm.hardcoded.plugin.tracer.CodeSyntaxTreeUtils.TracedFunction;
 
 /**
  * A class object for all sm objects.
  * 
- * @date 2020-11-22
+ * @date 2020-11-24
  * @author HardCoded
  */
 class SMClass {
-	protected Set<SMClass> classes;
-	protected Set<Function> functions;
-	protected Set<Constant> constants;
+	protected List<SMClass> classes;
+	protected List<Function> functions;
+	protected List<Constant> constants;
 	protected String name;
 	
 	public SMClass(String name) {
 		this.name = name;
 		
-		classes = new LinkedHashSet<>();
-		functions = new LinkedHashSet<>();
-		constants = new LinkedHashSet<>();
+		classes = new ArrayList<>();
+		functions = new ArrayList<>();
+		constants = new ArrayList<>();
 	}
 	
 	public SMClass getClass(String name) {
@@ -155,9 +156,7 @@ class SMClass {
 		private final String address;
 		private final String name;
 		private final boolean local;
-		
-		private Integer minArgs;
-		private Integer maxArgs;
+		private TracedFunction trace;
 		
 		private Function(String address, String name, boolean local) {
 			this.address = address;
@@ -169,44 +168,58 @@ class SMClass {
 			return address;
 		}
 		
-		public void setArguments(int args) {
-			setArguments(args, args);
+		public String getName() {
+			return name;
 		}
 		
-		public void setArguments(int min, int max) {
-			if(min < 0) {
-				// this is not allowed
-				// log that this is not good
-			}
-			
-			minArgs = min;
-			maxArgs = max;
-			
-			// 2048 max stack size.. Anything above that is wrong
+		public TracedFunction getTrace() {
+			return trace;
 		}
 		
-		@Override
+		public int hashCode() {
+			return address.hashCode();
+		}
+		
+		public boolean equals(Object obj) {
+			if(!(obj instanceof Function)) return false;
+			return hashCode() == obj.hashCode();
+		}
+		
+		public void setTrace(TracedFunction trace) {
+			this.trace = trace;
+		}
+		
 		public String toString() {
 			StringBuilder sb = new StringBuilder();
 			if(local) sb.append("[userdata] ");
 			
-			sb.append("function ").append(name).append("(");
-			// TODO: Arguments
-			sb.append(")");
+			if(trace != null) {
+				if(!trace.getSandbox().isEmpty()) {
+					sb.append("[").append(trace.getSandbox()).append("] ");
+				}
+			}
 			
-			// TODO: Argument length 'min:4 max:5' 'args:4'
-			if(minArgs == null || maxArgs == null) {
-				
+			sb.append("function ").append(name);
+			
+			if(trace == null) {
+				sb.append("() <no trace>");
 			} else {
+				String args = trace.getArgumentString();
+				if(args.isEmpty()) {
+					sb.append("() ");
+				} else {
+					sb.append("( ").append(args).append(" ) ");
+				}
 				
+				sb.append(trace.getSizeString());
 			}
 			
 			return sb.toString();
 		}
 	}
 	
-	public Set<Function> getAllFunctions() {
-		Set<Function> set = new LinkedHashSet<>();
+	public List<Function> getAllFunctions() {
+		List<Function> set = new ArrayList<>();
 		set.addAll(functions);
 		for(SMClass clazz : classes) {
 			set.addAll(clazz.getAllFunctions());

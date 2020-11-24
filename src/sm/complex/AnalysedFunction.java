@@ -10,6 +10,7 @@ import java.util.Set;
 
 import sm.util.LuaUtil;
 
+@Deprecated(forRemoval = true)
 public class AnalysedFunction implements Serializable {
 	private static final long serialVersionUID = 7851898282272717995L;
 	

@@ -11,6 +11,7 @@ import sm.util.CacheUtil;
 import sm.util.Util;
 
 
+@Deprecated(forRemoval = true)
 public final class ScrapMechanic {
 	public static final String ROOT_NAME = "ScrapMechanic.exe";
 	public static final String LIBRARY_NAME = "LUA51.DLL";

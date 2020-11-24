@@ -10,6 +10,8 @@ import ghidra.program.model.mem.MemoryAccessException;
 import sm.SMObject;
 
 // https://htmlpreview.github.io/?https://github.com/dragonGR/Ghidra/blob/master/Ghidra/Features/Base/src/main/help/help/topics/AutoAnalysisPlugin/AutoAnalysis.htm
+
+@Deprecated(forRemoval = true)
 public class SMUtil {
 	private static final String PUSH = "PUSH";
 	private static final String CALL = "CALL";

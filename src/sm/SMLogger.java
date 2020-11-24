@@ -1,5 +1,6 @@
 package sm;
 
+@Deprecated(forRemoval = true)
 public class SMLogger {
 	public static void log() {
 		System.out.println();

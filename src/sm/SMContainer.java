@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+@Deprecated(forRemoval = true)
 public class SMContainer implements Serializable {
 	private static final long serialVersionUID = 3314121831232541563L;
 	

@@ -3,6 +3,7 @@ package sm;
 import java.io.Serializable;
 import java.util.HashMap;
 
+@Deprecated(forRemoval = true)
 public class SMConstantObject implements Serializable {
 	private static final long serialVersionUID = 2926401670760278882L;
 	

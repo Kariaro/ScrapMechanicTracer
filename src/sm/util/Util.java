@@ -21,6 +21,9 @@ import ghidra.program.model.pcode.PcodeOpAST;
 import ghidra.program.model.pcode.Varnode;
 import ghidra.util.task.TaskMonitor;
 import sm.SMDialog;// TODO: Remove unnecessary functions
+
+
+@Deprecated(forRemoval = true)
 public class Util {
 	private static GhidraScript SCRIPT;
 	private static SMDialog DIALOG;

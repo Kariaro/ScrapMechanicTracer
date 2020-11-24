@@ -40,6 +40,7 @@ import sm.SMDialog;
 import sm.util.CacheUtil;
 import sm.util.Util;
 
+@Deprecated(forRemoval = true)
 public class SMDialog extends JFrame {
 	private static final long serialVersionUID = 8516907091837622595L;
 	

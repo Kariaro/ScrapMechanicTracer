@@ -11,6 +11,7 @@ import ghidra.program.model.symbol.SourceType;
 import ghidra.util.exception.InvalidInputException;
 import sm.complex.ScrapMechanic;
 
+@Deprecated(forRemoval = true)
 public final class FunctionUtil {
 	private FunctionUtil() {
 		

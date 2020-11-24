@@ -112,6 +112,15 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 		textArea_logging.setText(sb.toString());
 	}
 	
+	public void writeLog(String caller, String string) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(textArea_logging.getText());
+		
+		if(sb.length() != 0) sb.append('\n');
+		sb.append(caller).append(": ").append(string);
+		textArea_logging.setText(sb.toString());
+	}
+	
 	public void clearLogger() {
 		textArea_logging.setText("");
 	}

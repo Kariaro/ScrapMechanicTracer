@@ -19,6 +19,7 @@ import sm.util.Util;
  * 
  * @author HardCoded
  */
+@Deprecated(forRemoval = true)
 public final class PointerFinder {
 	// TODO: Custom memory block searching
 	private static final String NAME_PATTERN = "[a-zA-Z0-9.]+";

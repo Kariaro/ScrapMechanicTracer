@@ -9,6 +9,7 @@ import sm.util.LuaRegList;
 import sm.util.SMUtil;
 import sm.util.Util;
 
+@Deprecated(forRemoval = true)
 public class SMContainerBuilder {
 	private SMContainer container;
 	private List<SMObject> list;

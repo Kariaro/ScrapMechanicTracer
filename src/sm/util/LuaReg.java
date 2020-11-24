@@ -13,6 +13,7 @@ import ghidra.program.model.listing.Function;
  *
  * @author HardCoded
  */
+@Deprecated(forRemoval = true)
 public class LuaReg {
 	public final String base;
 	public final String name;

@@ -17,6 +17,7 @@ import sm.SMContainer;
  * 
  * @author HardCoded
  */
+@Deprecated(forRemoval = true)
 public final class CacheUtil {
 	private static File defaultTracePath;
 	private static File cachePath;

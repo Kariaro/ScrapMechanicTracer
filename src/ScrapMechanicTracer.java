@@ -21,6 +21,7 @@ import sm.util.Util;
  * 
  * @author HardCoded
  */
+@Deprecated(forRemoval = true)
 public class ScrapMechanicTracer extends GhidraScript {
 	public static final void main(String[] args) {
 		System.out.println("[Hopefully this will get compiled :&]");

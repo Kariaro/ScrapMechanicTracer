@@ -33,7 +33,8 @@ class TableElementFinder {
 		}
 		
 		Instruction iter = program.getListing().getInstructionAt(func.entry);
-				SMDefinition object = new SMDefinition(func.location, func.entry);
+		
+		SMDefinition object = new SMDefinition(func.location, func.entry);
 		List<Instruction> list = new ArrayList<>();
 		
 		String push_find = null;
@@ -78,6 +79,7 @@ class TableElementFinder {
 							object.importUserdata(addr_0, addr_1, addr_2);
 							
 							// TODO: Cache types
+							LuaTypes.INSTANCE.addType(plugin, addr_2);
 							// LuaUtil.addType(addr_2);
 						}
 					}
@@ -118,7 +120,8 @@ class TableElementFinder {
 					
 					if(entry.toString().equals(func.entry.toString())) {
 						String[] parts = bookmark.getComment().split(", ");
-												SMDefinition object = new SMDefinition(func.location, func.entry);
+						
+						SMDefinition object = new SMDefinition(func.location, func.entry);
 						object.importConstant(parts[0]);
 						object.importRegister(parts[1], parts[2]);
 						object.importUserdata(parts[3], parts[4], parts[5]);

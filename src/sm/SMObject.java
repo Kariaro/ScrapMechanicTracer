@@ -11,6 +11,7 @@ import sm.util.Util;
  * 
  * @author HardCoded
  */
+@Deprecated(forRemoval = true)
 public class SMObject implements Serializable {
 	private static final long serialVersionUID = 744008372035685156L;
 	
@@ -58,7 +59,6 @@ public class SMObject implements Serializable {
 	/**
 	 * @return The function this object belongs to
 	 */
-	@SuppressWarnings("deprecation")
 	public Function getFunction() {
 		return Util.getFunctionAt(loadFunctionAddress);
 	}

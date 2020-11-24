@@ -17,6 +17,7 @@ import ghidra.program.model.symbol.SymbolIterator;
 import ghidra.program.model.symbol.SymbolTable;
 import sm.complex.ScrapMechanic;
 
+@Deprecated(forRemoval = true)
 public final class LuaUtil {
 	private static Map<String, String> addr_to_name;
 	private static Map<String, String> name_to_addr;

@@ -18,6 +18,7 @@ import ghidra.program.model.mem.MemoryAccessException;
  * 
  * @author HardCoded
  */
+@Deprecated(forRemoval = true)
 public class LuaRegList implements Iterable<LuaReg> {
 	private List<LuaReg> list = new ArrayList<LuaReg>();
 	

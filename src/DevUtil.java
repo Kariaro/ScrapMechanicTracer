@@ -13,6 +13,7 @@ import ghidra.app.script.GhidraScript;
 import ghidra.app.script.GhidraScriptUtil;
 import ghidra.app.script.ScriptInfo;
 
+@Deprecated(forRemoval = true)
 public class DevUtil {
 	//public static File classPath;
 	

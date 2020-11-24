@@ -2,17 +2,14 @@ package sm.hardcoded.plugin.tracer;
 
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import docking.dnd.StringTransferable;
-import ghidra.app.cmd.disassemble.DisassembleCommand;
-import ghidra.app.cmd.function.DecompilerParameterIdCmd;
-import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressFactory;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.MemoryAccessException;
-import ghidra.program.model.symbol.SourceType;
-import ghidra.util.Msg;
+import sm.hardcoded.plugin.tracer.CodeSyntaxTreeUtils.TracedFunction;
 
 /**
  * Used to analsyse a scrap mechanic executable.
@@ -110,43 +107,25 @@ class ScrapMechanicAnalyser {
 			informationAnalyser.analyse(table);
 		}
 		
-		SMClass.Function func = table.getClass("localPlayer").getFunction("updateFpAnimation");
-		provider.writeLog(this, "Function -> " + (func == null ? null:func.getAddress()));
+		//SMClass.Function func = table.getClass("localPlayer").getFunction("updateFpAnimation");
+//		SMClass.Function func = table.getClass("localPlayer").getFunction("addRenderable");
+//		provider.writeLog(this, "Function -> " + (func == null ? null:func.getAddress()));
 		
-		if(func != null) {
-			// updateFpAnimation
-			Address entry = factory.getAddress(func.getAddress());
-			
-			// function updateFpAnimation( String, [Number, String], [Number, String], [Number, Boolean] ) min:2 max:4,
-			// function updateFpAnimation( String, [Number, String], [Number, String], [Number, Boolean] ) min:2 max:4,
-			
-			DisassembleCommand cmd = new DisassembleCommand(entry, null, true);
-			cmd.enableCodeAnalysis(false);
-			if(!cmd.applyTo(currentProgram)) {
-				Msg.warn(this, "Failed to disassemble memory at address '" + entry + "'");
-			}
-			
-			// Analyse all functions to load some code
-			cstAnalyser.analyse(func);
-			
-			// This is required to discover hidden parameters
-			DecompilerParameterIdCmd decompId = new DecompilerParameterIdCmd(
-				currentProgram.getMemory().getLoadedAndInitializedAddressSet(),
-				SourceType.ANALYSIS, true, true, 400
-			);
-			if(!decompId.applyTo(currentProgram)) {
-				Msg.warn(this, "Failed to apply DecompilerParameterIdCmd");
-			}
-			
-			// Analyse all functions and perform a full scan
-			cstAnalyser.analyse(func);
-		}
+//		if(func != null) {
+//			// function updateFpAnimation( String, [Number, String], [Number, String], [Number, Boolean] ) min:2 max:4,
+//			// function updateFpAnimation( String, [Number, String], [Number, String], [Number, Boolean] ) min:2 max:4,
+//			cstAnalyser.analyse(func);
+//		}
 		
-		// Msg.debug(this, "\n" + table.toString());
+		// Load important values
+		cstAnalyser.init();
+		scanAllFunctions(table);
 		
-		String string = table.toString();
+		StringBuilder string = new StringBuilder();
+		string.append(table.toString());
+		string.append("\n").append("Done. Took " + (System.currentTimeMillis() - startTime) + " ms");
 		Clipboard clip = Toolkit.getDefaultToolkit().getSystemClipboard();
-		clip.setContents(new StringTransferable(string), null);
+		clip.setContents(new StringTransferable(string.toString()), null);
 		
 		// Step 3:
 		//     Dump all the arguments and constants in a pretty format to the selected
@@ -157,6 +136,75 @@ class ScrapMechanicAnalyser {
 		provider.writeLog(this, "Done. Took " + (System.currentTimeMillis() - startTime) + " ms");
 		
 		return true;
+	}
+	
+	private boolean isRunning = false;
+	public void scanAllFunctions(SMClass table) {
+		if(isRunning) throw new IllegalArgumentException("The evaluater is already running!");
+		isRunning = true;
+		
+		ScrapMechanicWindowProvider provider = plugin.getWindow();
+		List<SMClass.Function> functions = table.getAllFunctions();
+		
+		final ConcurrentLinkedQueue<SMClass.Function> queue = new ConcurrentLinkedQueue<>(
+			// This will remove all functions that link to the same address.
+			Set.copyOf(functions)
+		);
+		final int originalSize = queue.size();
+		final Map<String, TracedFunction> mappings = new HashMap<>();
+		
+		provider.setProgressBar(0);
+		
+		ThreadGroup group = new ThreadGroup("SMDecompiler Group");
+		List<Thread> threads = new ArrayList<>();
+		
+		final int numThreads = provider.getThreads();
+		for(int i = 0; i < numThreads; i++) {
+			final int id = i;
+			final String workerName = String.format("[Worker ID#%2d]", id);
+			Thread thread = new Thread(group, () -> {
+				SMClass.Function pointer = null;
+				
+				try {
+					while(!queue.isEmpty()) {
+						pointer = queue.poll();
+						if(pointer == null) break;
+						
+						TracedFunction trace = cstAnalyser.analyse(pointer);
+						mappings.put(pointer.getAddress(), trace);
+						pointer.setTrace(trace);
+						provider.writeLog(workerName, "Exploring: " + pointer.toString());
+						
+						provider.setProgressBar((originalSize - queue.size()) / (0.0 + originalSize));
+					}
+				} catch(Exception e) {
+					e.printStackTrace();
+				}
+
+				provider.writeLog(workerName, "Done!");
+			});
+			thread.setName("Worker ID#" + id);
+			thread.start();
+			
+			threads.add(thread);
+		}
+		
+		for(Thread thread : threads) {
+			try {
+				thread.join();
+			} catch(InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		for(SMClass.Function function : functions) {
+			TracedFunction trace = mappings.get(function.getAddress());
+			if(trace != null) {
+				function.setTrace(trace);
+			}
+		}
+		
+		provider.setProgressBar(1);
 	}
 	
 	public String getLastError() {

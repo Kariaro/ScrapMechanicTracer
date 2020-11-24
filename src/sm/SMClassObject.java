@@ -11,6 +11,7 @@ import sm.util.LuaReg;
 import sm.util.LuaRegList;
 import sm.util.Util;
 
+@Deprecated(forRemoval = true)
 public class SMClassObject implements Serializable {
 	private static final long serialVersionUID = 2030879016733772612L;
 	

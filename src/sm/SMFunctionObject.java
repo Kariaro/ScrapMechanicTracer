@@ -8,6 +8,7 @@ import sm.complex.ScrapMechanic;
 import sm.util.FunctionUtil;
 import sm.util.LuaReg;
 
+@Deprecated(forRemoval = true)
 public class SMFunctionObject implements Serializable {
 	private static final long serialVersionUID = 3187779733238319470L;
 	

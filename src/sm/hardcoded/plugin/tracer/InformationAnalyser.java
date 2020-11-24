@@ -35,13 +35,13 @@ class InformationAnalyser {
 		plugin.getWindow().writeLog(this, "Searching for information");
 		
 		{
-			int functions = table.getAllFunctions().size();
-			plugin.getWindow().setFunctionsText("" + functions);
-			plugin.getWindow().writeLog(this, "Functions -> " + functions);
-			
 			String version = findVersionString();
 			plugin.getWindow().setVersionText("" + version);
 			plugin.getWindow().writeLog(this, "Version -> " + version);
+			
+			int functions = table.getAllFunctions().size();
+			plugin.getWindow().setFunctionsText("" + functions);
+			plugin.getWindow().writeLog(this, "Functions -> " + functions);
 		}
 		
 		plugin.getWindow().writeLog(this, "Took " + (System.currentTimeMillis() - time) + " ms");
