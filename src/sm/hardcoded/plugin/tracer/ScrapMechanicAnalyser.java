@@ -1,15 +1,14 @@
 package sm.hardcoded.plugin.tracer;
 
-import java.awt.Toolkit;
-import java.awt.datatransfer.Clipboard;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import docking.dnd.StringTransferable;
+import ghidra.app.decompiler.DecompInterface;
 import ghidra.program.model.address.AddressFactory;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.MemoryAccessException;
-import sm.hardcoded.plugin.tracer.CodeSyntaxTreeUtils.TracedFunction;
+import sm.hardcoded.plugin.tracer.CodeSyntaxTreeAnalyser.TracedFunction;
 
 /**
  * Used to analsyse a scrap mechanic executable.
@@ -40,7 +39,7 @@ class ScrapMechanicAnalyser {
 		
 		functionAnalyser = new FunctionAnalyser(tool);
 		constantAnalyser = new ConstantAnalyser(tool);
-		cstAnalyser = new CodeSyntaxTreeAnalyser(tool);
+		cstAnalyser = new CodeSyntaxTreeAnalyser(tool, luaTypeManager);
 		
 		informationAnalyser = new InformationAnalyser(tool, cstAnalyser);
 		luaImporter = new LuaFunctionImporter(tool);
@@ -75,6 +74,9 @@ class ScrapMechanicAnalyser {
 			return false;
 		}
 		
+		// Load important values
+		cstAnalyser.init();
+		
 		try {
 			// Try import lua functions and categories
 			luaImporter.initialize();
@@ -103,29 +105,56 @@ class ScrapMechanicAnalyser {
 			constantAnalyser.analyseConstants(clazz, object);
 		}
 		
-		{
-			informationAnalyser.analyse(table);
-		}
+		// Read and display the version and functions
+		informationAnalyser.analyse(table);
 		
-		//SMClass.Function func = table.getClass("localPlayer").getFunction("updateFpAnimation");
-//		SMClass.Function func = table.getClass("localPlayer").getFunction("addRenderable");
-//		provider.writeLog(this, "Function -> " + (func == null ? null:func.getAddress()));
-		
+//		SMClass.Function func = table.getClass("localPlayer").getFunction("updateFpAnimation");
+//		//SMClass.Function func = table.getClass("localPlayer").getFunction("addRenderable");
+////		provider.writeLog(this, "Function -> " + (func == null ? null:func.getAddress()));
+//		
+//		SMClass.Function func = table.getClass("portal").getFunction("hasOpeningA");
 //		if(func != null) {
 //			// function updateFpAnimation( String, [Number, String], [Number, String], [Number, Boolean] ) min:2 max:4,
 //			// function updateFpAnimation( String, [Number, String], [Number, String], [Number, Boolean] ) min:2 max:4,
-//			cstAnalyser.analyse(func);
+////			cstAnalyser.analyse(func);
+//			
+//			DecompInterface decomp = new DecompInterface();
+//			decomp.toggleCCode(false);
+//			decomp.toggleJumpLoads(false);
+//			System.out.println(func.getAddress());
+//			
+//			try {
+//				if(!decomp.openProgram(plugin.getCurrentProgram())) {
+//					throw new Exception("Failed to open program [ " + plugin.getCurrentProgram() + " ] : " + decomp.getLastMessage());
+//				}
+//				CodeSyntaxResolver resolver = new CodeSyntaxResolver(cstAnalyser, decomp);
+//				resolver.setDebug(true);
+//				// 006f22e0
+//				
+//				TracedFunction trace = resolver.analyse(func, 2);
+//				func.setTrace(trace);
+//				
+//				System.out.println(func);
+//			} catch(Exception e) {
+//				decomp.closeProgram();
+//				e.printStackTrace();
+//			} finally {
+//				decomp.closeProgram();
+//			}
+//			
+//			if(true) return true;
 //		}
 		
-		// Load important values
-		cstAnalyser.init();
 		scanAllFunctions(table);
+		save(table);
 		
+		/*
 		StringBuilder string = new StringBuilder();
 		string.append(table.toString());
 		string.append("\n").append("Done. Took " + (System.currentTimeMillis() - startTime) + " ms");
 		Clipboard clip = Toolkit.getDefaultToolkit().getSystemClipboard();
 		clip.setContents(new StringTransferable(string.toString()), null);
+		*/
 		
 		// Step 3:
 		//     Dump all the arguments and constants in a pretty format to the selected
@@ -163,14 +192,25 @@ class ScrapMechanicAnalyser {
 			final int id = i;
 			final String workerName = String.format("[Worker ID#%2d]", id);
 			Thread thread = new Thread(group, () -> {
+				DecompInterface decomp = new DecompInterface();
+				decomp.toggleCCode(false);
+				decomp.toggleJumpLoads(false);
+				decomp.toggleParamMeasures(false);
+				// paramid ?
+				
 				SMClass.Function pointer = null;
 				
 				try {
+					if(!decomp.openProgram(plugin.getCurrentProgram())) {
+						throw new Exception("Failed to open program [ " + plugin.getCurrentProgram() + " ] : " + decomp.getLastMessage());
+					}
+					
+					CodeSyntaxResolver resolver = new CodeSyntaxResolver(cstAnalyser, decomp);
 					while(!queue.isEmpty()) {
 						pointer = queue.poll();
 						if(pointer == null) break;
 						
-						TracedFunction trace = cstAnalyser.analyse(pointer);
+						TracedFunction trace = resolver.analyse(pointer, 2);
 						mappings.put(pointer.getAddress(), trace);
 						pointer.setTrace(trace);
 						provider.writeLog(workerName, "Exploring: " + pointer.toString());
@@ -178,7 +218,10 @@ class ScrapMechanicAnalyser {
 						provider.setProgressBar((originalSize - queue.size()) / (0.0 + originalSize));
 					}
 				} catch(Exception e) {
+					decomp.closeProgram();
 					e.printStackTrace();
+				} finally {
+					decomp.closeProgram();
 				}
 
 				provider.writeLog(workerName, "Done!");
@@ -205,6 +248,20 @@ class ScrapMechanicAnalyser {
 		}
 		
 		provider.setProgressBar(1);
+	}
+	
+	private void save(SMClass table) {
+		ScrapMechanicWindowProvider provider = plugin.getWindow();
+		File file = new File(provider.getSavePath());
+		file.mkdirs();
+		
+		String traceString = table.toString();
+		File traceFile = new File(file, "lua." + provider.getVersionString() + ".time." + System.currentTimeMillis() + ".txt");
+		try(DataOutputStream stream = new DataOutputStream(new FileOutputStream(traceFile))) {
+			stream.write(traceString.getBytes());
+		} catch(IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public String getLastError() {

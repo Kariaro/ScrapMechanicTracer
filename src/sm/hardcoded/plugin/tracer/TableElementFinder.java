@@ -78,9 +78,7 @@ class TableElementFinder {
 							// Msg.debug(this, String.format("    : CreateUserdata( table = %s, userdata = %s, type = %s )", addr_0, addr_1, addr_2));
 							object.importUserdata(addr_0, addr_1, addr_2);
 							
-							// TODO: Cache types
-							LuaTypes.INSTANCE.addType(plugin, addr_2);
-							// LuaUtil.addType(addr_2);
+							// LuaTypes.INSTANCE.addType(plugin, addr_2);
 						}
 					}
 					

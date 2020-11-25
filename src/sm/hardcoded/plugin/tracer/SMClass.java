@@ -1,8 +1,9 @@
 package sm.hardcoded.plugin.tracer;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
-import sm.hardcoded.plugin.tracer.CodeSyntaxTreeUtils.TracedFunction;
+import sm.hardcoded.plugin.tracer.CodeSyntaxTreeAnalyser.TracedFunction;
 
 /**
  * A class object for all sm objects.

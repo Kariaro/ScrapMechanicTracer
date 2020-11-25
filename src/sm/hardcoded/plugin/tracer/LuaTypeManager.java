@@ -1,8 +1,7 @@
 package sm.hardcoded.plugin.tracer;
 
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressFactory;
@@ -13,10 +12,10 @@ import sm.hardcoded.plugin.tracer.ScrapMechanicBookmarkManager.BookmarkCategory;
 class LuaTypeManager {
 	private final ScrapMechanicPlugin plugin;
 	private final ScrapMechanicBookmarkManager manager;
-	private Set<Type> types;
+	private List<Type> types;
 	
 	LuaTypeManager(ScrapMechanicPlugin tool) {
-		types = new HashSet<>();
+		types = new ArrayList<>();
 		plugin = tool;
 		manager = tool.getBookmarkManager();
 		
@@ -24,25 +23,22 @@ class LuaTypeManager {
 	}
 	
 	private void addDefaultTypes() {
-		addType("None", -1);
-		addType("Nil", 0);
-		addType("Boolean", 1);
-		addType("Lightuserdata", 2);
-		addType("Number", 3);
-			addType("Integer", 3);
-		addType("String", 4);
-		addType("Table", 5);
-		addType("Function", 6);
-		addType("Userdata", 7);
-		addType("Thread", 8);
+		addType("none", -1);
+		addType("nil", 0);
+		addType("boolean", 1);
+		addType("lightuserdata", 2);
+		addType("number", 3);
+			addType("integer", 3);
+		addType("string", 4);
+		addType("table", 5);
+		addType("function", 6);
+		addType("userdata", 7);
+		addType("thread", 8);
 	}
 	
 	private void addType(String name, int id) {
 		Type type = new Type(name, id);
-		if(types.contains(type)) {
-			return;
-		}
-		
+		if(types.contains(type)) return;
 		types.add(type);
 	}
 	
@@ -90,9 +86,17 @@ class LuaTypeManager {
 		addType(name, id);
 	}
 	
+	public Type getType(int id) {
+		for(Type type : types) {
+			if(type.id == id) return type;
+		}
+		
+		return null;
+	}
+	
 	static class Type {
-		private String name;
-		private int id;
+		private final String name;
+		private final int id;
 		
 		private Type(String print, int id) {
 			this.name = print;
@@ -101,11 +105,14 @@ class LuaTypeManager {
 		
 		public String getName() { return name; }
 		public int getId() { return id; }
-		public int hashCode() { return name.hashCode(); }
+		
+		public int hashCode() {
+			return name.hashCode();
+		}
 		
 		public boolean equals(Object obj) {
-			if(obj == null || !(obj instanceof Type)) return false;
-			return name.equals(((Type)obj).name);
+			if(!(obj instanceof Type)) return false;
+			return obj.hashCode() == hashCode();
 		}
 		
 		public String toString() {

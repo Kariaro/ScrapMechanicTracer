@@ -129,6 +129,10 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 	// Properties                                    //
 	///////////////////////////////////////////////////
 	
+	public String getVersionString() {
+		return label_version.getText();
+	}
+	
 	public int getThreads() {
 		if(comboBox_threads == null) return 1;
 		return comboBox_threads.getSelectedIndex() + 1;
