@@ -21,8 +21,7 @@ import ghidra.framework.plugintool.ComponentProviderAdapter;
  */
 public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 	/**
-	 * Returns the default plugin home directory.
-	 * @return the default plugin home directory
+	 * Returns the default plugin home directory
 	 */
 	private static final String getPluginHome() {
 		String userHome = System.getProperty("user.home");
@@ -35,6 +34,9 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 		return pluginHome.getAbsolutePath();
 	}
 	
+	
+	// TODO: Make the user able to quick launch the folder
+	// TODO: Make the user able to use this plugin headless
 	
 	private final ScrapMechanicPlugin plugin;
 	private GhidraFileChooser fileChooser;
@@ -60,6 +62,7 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 	private JProgressBar progressBar;
 	private JButton btnScan;
 	private JButton btnResetScan;
+	private JButton btnBrowserPath;
 	
 	private JComboBox<Integer> comboBox_threads;
 	private JComboBox<Integer> comboBox_searchDepth;
@@ -78,14 +81,16 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 	
 	public void setScanEnabled(boolean b) {
 		btnScan.setEnabled(b);
+		btnBrowserPath.setEnabled(!b);
+		comboBox_threads.setEnabled(!b);
+		comboBox_searchDepth.setEnabled(!b);
 	}
 	
 	public void setResetScanEnabled(boolean b) {
 		// The reset scan button is not good enough right now..
 		// TODO: Update the bookmark manager gui when you press the reset scan button.
-		// TODO: Update the button when the bookmark manager has changed.
 		
-		//    btnResetScan.setEnabled(b);
+		btnResetScan.setEnabled(b);
 	}
 	
 	
@@ -303,7 +308,7 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 		fileChooser.setMultiSelectionEnabled(false);
 		fileChooser.setFileSelectionMode(GhidraFileChooserMode.DIRECTORIES_ONLY);
 		
-		JButton btnBrowserPath = new JButton("Browser");
+		btnBrowserPath = new JButton("Browser");
 		btnBrowserPath.setHorizontalAlignment(SwingConstants.LEADING);
 		btnBrowserPath.setFocusable(false);
 		btnBrowserPath.setAlignmentX(1.0f);
