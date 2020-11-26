@@ -1,0 +1,52 @@
+sm/hardcoded/plugin/tracer/ScrapMechanicWindowProvider2Oldf.java
+ sm.hardcoded.plugin.tracer.ScrapMechanicWindowProvider2Oldf
+ sm.hardcoded.plugin.tracer.ScrapMechanicWindowProvider2Oldf$1
+sm/hardcoded/plugin/tracer/ProgramMemory.java
+ sm.hardcoded.plugin.tracer.ProgramMemory
+sm/hardcoded/plugin/tracer/ScrapMechanicAnalyser.java
+ sm.hardcoded.plugin.tracer.ScrapMechanicAnalyser
+sm/hardcoded/plugin/tracer/CodeSyntaxResolver.java
+ sm.hardcoded.plugin.tracer.CodeSyntaxResolver
+sm/hardcoded/plugin/tracer/ScrapMechanicWindowProvider.java
+ sm.hardcoded.plugin.tracer.ScrapMechanicWindowProvider
+ sm.hardcoded.plugin.tracer.ScrapMechanicWindowProvider$1
+ sm.hardcoded.plugin.tracer.ScrapMechanicWindowProvider$2
+sm/hardcoded/plugin/tracer/SMDefinition.java
+ sm.hardcoded.plugin.tracer.SMDefinition
+sm/hardcoded/plugin/tracer/TableFinder.java
+ sm.hardcoded.plugin.tracer.TableFinder
+sm/hardcoded/plugin/tracer/FunctionPointer.java
+ sm.hardcoded.plugin.tracer.FunctionPointer
+sm/hardcoded/plugin/tracer/StringPointer.java
+ sm.hardcoded.plugin.tracer.StringPointer
+sm/hardcoded/plugin/tracer/InformationAnalyser.java
+ sm.hardcoded.plugin.tracer.InformationAnalyser
+sm/hardcoded/plugin/tracer/ScrapMechanicPlugin.java
+ sm.hardcoded.plugin.tracer.ScrapMechanicPlugin
+ sm.hardcoded.plugin.tracer.ScrapMechanicPlugin$1
+sm/hardcoded/plugin/tracer/CodeSyntaxTreeAnalyser.java
+ sm.hardcoded.plugin.tracer.CodeSyntaxTreeAnalyser
+ sm.hardcoded.plugin.tracer.CodeSyntaxTreeAnalyser$NodeFunction
+ sm.hardcoded.plugin.tracer.CodeSyntaxTreeAnalyser$TracedFunction
+sm/hardcoded/plugin/tracer/ScrapMechanicBookmarkManager.java
+ sm.hardcoded.plugin.tracer.ScrapMechanicBookmarkManager
+ sm.hardcoded.plugin.tracer.ScrapMechanicBookmarkManager$BookmarkCategory
+sm/hardcoded/plugin/tracer/CodeSyntaxTreeUnit.java
+ sm.hardcoded.plugin.tracer.CodeSyntaxTreeUnit
+sm/hardcoded/plugin/tracer/LuaFunctionImporter.java
+ sm.hardcoded.plugin.tracer.LuaFunctionImporter
+sm/hardcoded/plugin/tracer/ObjectUtils.java
+ sm.hardcoded.plugin.tracer.ObjectUtils
+sm/hardcoded/plugin/tracer/SMClass.java
+ sm.hardcoded.plugin.tracer.SMClass
+ sm.hardcoded.plugin.tracer.SMClass$Constant
+ sm.hardcoded.plugin.tracer.SMClass$Function
+sm/hardcoded/plugin/tracer/FunctionAnalyser.java
+ sm.hardcoded.plugin.tracer.FunctionAnalyser
+sm/hardcoded/plugin/tracer/LuaTypeManager.java
+ sm.hardcoded.plugin.tracer.LuaTypeManager
+ sm.hardcoded.plugin.tracer.LuaTypeManager$Type
+sm/hardcoded/plugin/tracer/ConstantAnalyser.java
+ sm.hardcoded.plugin.tracer.ConstantAnalyser
+sm/hardcoded/plugin/tracer/TableElementFinder.java
+ sm.hardcoded.plugin.tracer.TableElementFinder
