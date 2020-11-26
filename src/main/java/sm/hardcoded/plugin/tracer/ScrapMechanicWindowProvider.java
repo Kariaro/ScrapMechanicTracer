@@ -24,10 +24,10 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 	/**
 	 * Returns the default plugin home directory
 	 */
-	private static final String getPluginHome() {
+	public static final String getDefaultSavePath() {
 		String userHome = System.getProperty("user.home");
 		File pluginHome = new File(userHome, "ScrapMechanicGhidraPlugin");
-		if(!pluginHome.exists()) pluginHome.mkdir();
+		if(!pluginHome.exists()) pluginHome.mkdirs();
 		
 		File tracePath = new File(pluginHome, "traces");
 		if(!tracePath.exists()) tracePath.mkdir();
@@ -36,8 +36,7 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 	}
 	
 	
-	// TODO: Make the user able to quick launch the folder
-	// TODO: Make the user able to use this plugin headless
+	// T O D O ( ??? ) : Make the user able to use this plugin headless
 	
 	private final ScrapMechanicPlugin plugin;
 	private GhidraFileChooser fileChooser;
@@ -150,7 +149,7 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 	}
 	
 	public String getSavePath() {
-		return textField_savePath.getText();
+		return getValidSavePath(textField_savePath.getText());
 	}
 	
 	public void setThreads(int threads) {
@@ -175,13 +174,13 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 	
 	private String getValidSavePath(String savePath) {
 		if(savePath == null) {
-			String pluginHome = getPluginHome();
+			String pluginHome = getDefaultSavePath();
 			File tracesPath = new File(pluginHome, "traces");
 			savePath = tracesPath.getAbsolutePath();
 		} else {
 			File tracesPath = new File(savePath);
 			if(!tracesPath.exists() || !tracesPath.isDirectory()) {
-				String pluginHome = getPluginHome();
+				String pluginHome = getDefaultSavePath();
 				tracesPath = new File(pluginHome, "traces");
 				savePath = tracesPath.getAbsolutePath();
 			}
@@ -302,6 +301,7 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 		
 		textField_savePath = new JTextField();
 		textField_savePath.setEditable(false);
+		textField_savePath.setText(getValidSavePath(getSavePath()));
 		textField_savePath.setText((String) null);
 		textField_savePath.setMinimumSize(new Dimension(6, 21));
 		textField_savePath.setMaximumSize(new Dimension(2147483647, 21));
@@ -346,7 +346,7 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 		btnOpenSavePath.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent event) {
 				try {
-					File folder = new File(getSavePath());
+					File folder = new File(getValidSavePath(getSavePath()));
 					if(!folder.exists()) folder.mkdirs();
 					Desktop.getDesktop().open(folder);
 				} catch(IOException e) {

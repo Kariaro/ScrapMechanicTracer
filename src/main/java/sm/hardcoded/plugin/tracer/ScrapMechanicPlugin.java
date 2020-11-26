@@ -21,16 +21,15 @@ import ghidra.util.Msg;
 import resources.ResourceManager;
 
 @PluginInfo(
-	status = PluginStatus.STABLE,
+	// Released because it's tested enough
+	status = PluginStatus.RELEASED,
 	category = PluginCategoryNames.ANALYSIS,
-	packageName = ScrapMechanicPlugin.NAME, // "sm.hardcoded.plugin.tracer.ScrapMechanicPlugin",
+	packageName = ScrapPluginPackage.NAME,
 	shortDescription = "This plugin finds the argument values for each lua function",
 	description = "This plugin finds the argument values for each lua function",
 	isSlowInstallation = false
 )
 public class ScrapMechanicPlugin extends ProgramPlugin implements FrontEndable {
-	public static final String NAME = ".hardcoded.plugin.tracer";
-	
 	private ScrapMechanicWindowProvider provider;
 	private ScrapMechanicBookmarkManager bookmarkManager;
 	private ScrapMechanicAnalyser analyser;
@@ -43,6 +42,26 @@ public class ScrapMechanicPlugin extends ProgramPlugin implements FrontEndable {
 	
 	public ScrapMechanicPlugin(PluginTool tool) {
 		super(tool, false, false);
+
+		provider = new ScrapMechanicWindowProvider(this);
+		bookmarkManager = new ScrapMechanicBookmarkManager(this);
+		analyser = new ScrapMechanicAnalyser(this);
+		
+		Logger.println("This should print if we are in development mode hopefully!!!!!!!");
+		
+		setupActions();
+	}
+	
+	private void setupActions() {
+		DockingAction action = new DockingAction("ScrapMechanicTracer", getName()) {
+			public void actionPerformed(ActionContext context) {
+				provider.setVisible(true);
+			}
+		};
+		
+		DockingWindowManager.getHelpService().excludeFromHelp(action);
+		action.setToolBarData(new ToolBarData(icon_64));
+		tool.addAction(action);
 	}
 	
 	protected void programOpened(Program program) {
@@ -74,40 +93,20 @@ public class ScrapMechanicPlugin extends ProgramPlugin implements FrontEndable {
 	public void init() {
 		super.init();
 		
-		provider = new ScrapMechanicWindowProvider(this);
-		bookmarkManager = new ScrapMechanicBookmarkManager(this);
+		// FIXME: Reload this when to program changes always!!!
 		programMemory = new ProgramMemory(this);
-		analyser = new ScrapMechanicAnalyser(this);
-		
-		setupActions();
 	}
 	
 	public void readConfigState(SaveState saveState) {
-		if(provider == null) return;
-		
 		provider.setThreads(saveState.getInt("threads", 1));
 		provider.setSearchDepth(saveState.getInt("searchDepth", 1));
-		provider.setSavePath(saveState.getString("savePath", null));
+		provider.setSavePath(saveState.getString("savePath", ScrapMechanicWindowProvider.getDefaultSavePath()));
 	}
 	
 	public void writeConfigState(SaveState saveState) {
-		if(provider == null) return;
-		
 		saveState.putInt("threads", provider.getThreads());
 		saveState.putInt("searchDepth", provider.getSearchDepth());
 		saveState.putString("savePath", provider.getSavePath());
-	}
-	
-	private void setupActions() {
-		DockingAction action = new DockingAction("ScrapMechanicTracer", getName()) {
-			public void actionPerformed(ActionContext context) {
-				provider.setVisible(true);
-			}
-		};
-		
-		DockingWindowManager.getHelpService().excludeFromHelp(action);
-		action.setToolBarData(new ToolBarData(icon_64));
-		tool.addAction(action);
 	}
 	
 	/**

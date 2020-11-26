@@ -11,6 +11,8 @@ sm/hardcoded/plugin/tracer/ScrapMechanicWindowProvider.java
  sm.hardcoded.plugin.tracer.ScrapMechanicWindowProvider
  sm.hardcoded.plugin.tracer.ScrapMechanicWindowProvider$1
  sm.hardcoded.plugin.tracer.ScrapMechanicWindowProvider$2
+sm/hardcoded/plugin/tracer/ScrapPluginPackage.java
+ sm.hardcoded.plugin.tracer.ScrapPluginPackage
 sm/hardcoded/plugin/tracer/SMDefinition.java
  sm.hardcoded.plugin.tracer.SMDefinition
 sm/hardcoded/plugin/tracer/TableFinder.java

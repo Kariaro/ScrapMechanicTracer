@@ -145,25 +145,22 @@ class ScrapMechanicAnalyser {
 //			if(true) return true;
 //		}
 		
-		scanAllFunctions(table);
-		save(table);
-		
-		/*
-		StringBuilder string = new StringBuilder();
-		string.append(table.toString());
-		string.append("\n").append("Done. Took " + (System.currentTimeMillis() - startTime) + " ms");
-		Clipboard clip = Toolkit.getDefaultToolkit().getSystemClipboard();
-		clip.setContents(new StringTransferable(string.toString()), null);
-		*/
+		try {
+			scanAllFunctions(table);
+		} catch(Exception e) {
+			e.printStackTrace();
+		} finally {
+			// Make sure we close it
+			isRunning = false;
+		}
 		
 		// Step 3:
 		//     Dump all the arguments and constants in a pretty format to the selected
 		//     file path 'provider.getScanPath()' and give it the file name
 		//     lua.<Version>.<Date yyyy.mm.dd.hh.MM.ss>.log
-		
+		save(table);
 		
 		provider.writeLog(this, "Done. Took " + (System.currentTimeMillis() - startTime) + " ms");
-		
 		return true;
 	}
 	

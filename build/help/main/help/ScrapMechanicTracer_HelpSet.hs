@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='ISO-8859-1' ?>
 <!DOCTYPE helpset PUBLIC "-//Sun Microsystems Inc.//DTD JavaHelp HelpSet Version 2.0//EN" "http://java.sun.com/products/javahelp/helpset_2_0.dtd">
 
-<!-- HelpSet auto-generated on Thu Nov 26 20:12:54 CET 2020 -->
+<!-- HelpSet auto-generated on Thu Nov 26 22:00:56 CET 2020 -->
 <helpset version="2.0">
 	<title>ScrapMechanicTracer HelpSet</title>
 	<maps>
