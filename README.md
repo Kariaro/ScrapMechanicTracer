@@ -7,7 +7,7 @@ and to dump them to a readable file. Here are some example on how the traces wil
 What this plugin does is to search for all values inside the global table **sm** and trying to
 understand the code flow of each function to reverseengineer the call stack.
 
-This plugin is aimed to work on every version of ScrapMechanic without any problems. (Tested 0.4.0 - 0.4.6)
+This plugin is aimed to work on every version of ScrapMechanic without any problems. (Tested 0.4.0 - 0.4.8.620)
 
 
 ## Pre made traces
@@ -23,4 +23,5 @@ After that you press **Scan** and it will dump the trace to the selected **Trace
 
 ## Installing & Soon will maybe* add more images and make this doc better. 
 
-TODO Will maybe have a 50% working plugin 2021.
+Kinda done. Finishing up the project.
+

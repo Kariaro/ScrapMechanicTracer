@@ -146,7 +146,7 @@ class ScrapMechanicAnalyser {
 //		if(func != null) {
 //			// function updateFpAnimation( String, [Number, String], [Number, String], [Number, Boolean] ) min:2 max:4,
 //			// function updateFpAnimation( String, [Number, String], [Number, String], [Number, Boolean] ) min:2 max:4,
-////			cstAnalyser.analyse(func);
+//			// cstAnalyser.analyse(func);
 //			
 //			DecompInterface decomp = new DecompInterface();
 //			decomp.toggleCCode(false);
