@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>{TITLE}</title>
+		<style>
+			* {
+				font-family:sans-serif;
+				text-decoration:none;
+			}
+			
+			body {
+				margin: 0px;
+			}
+			
+			iframe {
+				width: 100%;
+				height: 100%;
+				border: 0px;
+			}
+			
+			div.content {
+				display:flex;
+				height:calc(100vh - 30px);
+			}
+			
+			div.split {
+				background-color:#ccc;
+				cursor:e-resize;
+				width:5px;
+			}
+			
+			footer {
+				background-color:#eee;
+				padding:6px;
+			}
+		</style>
+		<script>
+			function move(e) {
+				var elm0 = document.getElementById('tree');
+				var elm1 = document.getElementById('view');
+				var local = (e.pageX / window.innerWidth) * 100;
+				local = Math.min(100, Math.max(0, local));
+				elm0.style.width = "calc(" + local + "% - 2.5px)";
+				elm1.style.width = "calc(" + (100 - local) + "% - 2.5px)";
+			}
+			
+			function stop(e) {
+				window.removeEventListener('touchcancel', move, false);
+				window.removeEventListener('mousemove', move, false);
+				window.removeEventListener('mouseup', stop, false);
+				window.removeEventListener('touchend', stop, false);
+				var elm0 = document.getElementById('tree');
+				var elm1 = document.getElementById('view');
+				document.body.style.cursor="";
+				elm0.style.pointerEvents = "";
+				elm1.style.pointerEvents = "";
+				elm0.style.userSelect = "";
+				elm1.style.userSelect = "";
+			}
+			
+			function drag(e) {
+				e.preventDefault();
+				window.addEventListener('touchcancel', move, false);
+				window.addEventListener('mousemove', move, false);
+				window.addEventListener('mouseup', stop, false);
+				window.addEventListener('touchend', stop, false);
+				var elm0 = document.getElementById('tree');
+				var elm1 = document.getElementById('view');
+				document.body.style.cursor="e-resize";
+				elm0.style.pointerEvents = "none";
+				elm1.style.pointerEvents = "none";
+				elm0.style.userSelect = "none";
+				elm1.style.userSelect = "none";
+			}
+		</script>
+	</head>
+	<body>
+		<div class="content">
+			<iframe id="tree" name="tree" src="tree.html" style="width:20%"></iframe>
+			<div class="split" onmousedown="drag(event)" ondragstart="drag(event)"></div>
+			<iframe id="view" name="view" src="panel.html" style="width:80%"></iframe>
+		</div>
+		<footer>
+			<span>
+				Made by HardCoded
+				<a href="https://github.com/Kariaro" target="_blank">Github</a>
+				<a href="https://www.twitch.tv/hard_coded" target="_blank">Twitch</a>
+			</span>
+		</footer>
+	</body>
+</html>

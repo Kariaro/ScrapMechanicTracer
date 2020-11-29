@@ -1,7 +1,7 @@
 package sm.hardcoded.plugin.tracer;
 
-import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 
 import javax.swing.ImageIcon;
 
@@ -12,7 +12,6 @@ import docking.action.ToolBarData;
 import ghidra.app.plugin.PluginCategoryNames;
 import ghidra.app.plugin.ProgramPlugin;
 import ghidra.framework.main.FrontEndable;
-import ghidra.framework.options.SaveState;
 import ghidra.framework.plugintool.PluginInfo;
 import ghidra.framework.plugintool.PluginTool;
 import ghidra.framework.plugintool.util.PluginStatus;
@@ -36,13 +35,15 @@ public class ScrapMechanicPlugin extends ProgramPlugin implements FrontEndable {
 	private ProgramMemory programMemory;
 	
 	private boolean scanning;
+	private final SMPrefs preferences;
 	
 	final ImageIcon icon_64 = ResourceManager.loadImage("images/smt_icon_64.png");
 	final ImageIcon icon_16 = ResourceManager.loadImage("images/smt_icon_16.png");
 	
 	public ScrapMechanicPlugin(PluginTool tool) {
 		super(tool, false, false);
-
+		
+		preferences = new SMPrefs();
 		provider = new ScrapMechanicWindowProvider(this);
 		bookmarkManager = new ScrapMechanicBookmarkManager(this);
 		analyser = new ScrapMechanicAnalyser(this);
@@ -76,6 +77,10 @@ public class ScrapMechanicPlugin extends ProgramPlugin implements FrontEndable {
 		updateScanOptions();
 	}
 	
+	protected SMPrefs getPreferences() {
+		return preferences;
+	}
+	
 	protected boolean canClose() {
 		return !scanning;
 	}
@@ -97,18 +102,6 @@ public class ScrapMechanicPlugin extends ProgramPlugin implements FrontEndable {
 		programMemory = new ProgramMemory(this);
 	}
 	
-	public void readConfigState(SaveState saveState) {
-		provider.setThreads(saveState.getInt("threads", 1));
-		provider.setSearchDepth(saveState.getInt("searchDepth", 1));
-		provider.setSavePath(saveState.getString("savePath", ScrapMechanicWindowProvider.getDefaultSavePath()));
-	}
-	
-	public void writeConfigState(SaveState saveState) {
-		saveState.putInt("threads", provider.getThreads());
-		saveState.putInt("searchDepth", provider.getSearchDepth());
-		saveState.putString("savePath", provider.getSavePath());
-	}
-	
 	/**
 	 * Start scanning the current program.
 	 */
@@ -127,13 +120,10 @@ public class ScrapMechanicPlugin extends ProgramPlugin implements FrontEndable {
 				
 				currentProgram.endTransaction(transactionId, result);
 			} catch(Throwable e) {
-				ByteArrayOutputStream bs = new ByteArrayOutputStream();
-				PrintWriter writer = new PrintWriter(bs);
-				e.printStackTrace(writer);
-				writer.flush();
-				writer.close();
+				StringWriter writer = new StringWriter();
+				e.printStackTrace(new PrintWriter(writer));
 				
-				Msg.showError(this, provider.getComponent(), "Exception: " + e.getCause(), new String(bs.toByteArray()));
+				Msg.showError(this, provider.getComponent(), "Exception: " + e.getCause(), writer.toString());
 				
 				if(transactionId != -1) {
 					currentProgram.endTransaction(transactionId, false);

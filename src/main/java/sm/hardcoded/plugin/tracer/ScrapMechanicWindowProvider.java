@@ -6,6 +6,7 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -17,37 +18,43 @@ import ghidra.framework.plugintool.ComponentProviderAdapter;
 /**
  * This class is the window provider for the ScrapMechanicTracer GhidraPlugin.
  * 
- * @author Admin
- * @date 2020-11-22
+ * @author HardCoded
+ * @date 2020-11-27
  */
 public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 	/**
 	 * Returns the default plugin home directory
 	 */
 	public static final String getDefaultSavePath() {
-		String userHome = System.getProperty("user.home");
-		File pluginHome = new File(userHome, "ScrapMechanicGhidraPlugin");
-		if(!pluginHome.exists()) pluginHome.mkdirs();
-		
-		File tracePath = new File(pluginHome, "traces");
+		File tracePath = new File(SMPrefs.getSavePath(), "traces");
 		if(!tracePath.exists()) tracePath.mkdir();
-		
-		return pluginHome.getAbsolutePath();
+		return tracePath.getAbsolutePath();
 	}
 	
-	
-	// T O D O ( ??? ) : Make the user able to use this plugin headless
-	
 	private final ScrapMechanicPlugin plugin;
+	private final SMPrefs prefs;
 	private GhidraFileChooser fileChooser;
-	
 	private JComponent mainPanel;
+	
+	private Thread messageThread;
 	
 	ScrapMechanicWindowProvider(ScrapMechanicPlugin tool) {
 		super(tool.getTool(), "ScrapMechanicTracer", tool.getName());
 		plugin = tool;
+		prefs = tool.getPreferences();
 		
 		createComponent();
+		
+		messageThread = new Thread(messageRunner);
+		messageThread.setDaemon(true);
+		messageThread.setPriority(Thread.MIN_PRIORITY);
+		messageThread.setName("ScrapMechanicWindowProvider.messageQueue");
+		messageThread.start();
+	}
+	
+	protected void finalize() throws Throwable {
+		messageThread.interrupt();
+		messageThread.join();
 	}
 	
 	public JComponent getComponent() {
@@ -81,6 +88,7 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 	
 	public void setScanEnabled(boolean b) {
 		btnScan.setEnabled(b);
+		btnResetScan.setEnabled(b);
 		btnBrowserPath.setEnabled(b);
 		comboBox_threads.setEnabled(b);
 		comboBox_searchDepth.setEnabled(b);
@@ -99,6 +107,7 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 		setProgressBar(percentage, 100);
 	}
 	
+	// TODO???
 	public void setProgressBar(double percentage, int max) {
 		int value = (int)(percentage * 10000);
 		if(value < 0) value = 0;
@@ -108,25 +117,49 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 		progressBar.setString((value / 100) + " %");
 	}
 	
-	public void writeLog(Object caller, String string) {
-		StringBuilder sb = new StringBuilder();
-		sb.append(textArea_logging.getText());
-		
-		if(sb.length() != 0) sb.append('\n');
-		sb.append(caller.getClass().getSimpleName()).append(": ").append(string);
-		textArea_logging.setText(sb.toString());
+	private ConcurrentLinkedQueue<String> message_queue = new ConcurrentLinkedQueue<>();
+	private Runnable messageRunner = new Runnable() {
+		public void run() {
+			while(!Thread.interrupted()) {
+				try {
+					Thread.sleep(50);
+					if(message_queue.isEmpty()) continue;
+				} catch(InterruptedException e) {
+					break;
+				}
+				
+				StringBuilder sb = new StringBuilder(textArea_logging.getText());
+				while(!message_queue.isEmpty()) {
+					sb.append(message_queue.poll());
+				}
+				
+				// Make sure that we do not have empty first line.
+				if(sb.charAt(0) == '\n') {
+					sb.deleteCharAt(0);
+				}
+				
+				textArea_logging.setText(sb.toString());
+			}
+		}
+	};
+	
+	public synchronized void writeLog(Object caller, String string) {
+		writeLog(caller.getClass().getSimpleName(), string);
 	}
 	
-	public void writeLog(String caller, String string) {
-		StringBuilder sb = new StringBuilder();
-		sb.append(textArea_logging.getText());
+	public synchronized void writeLog(String caller, String string) {
+		String message = "\n" + caller + ": " + string;
+		message_queue.add(message);
 		
+		/*StringBuilder sb = new StringBuilder();
+		sb.append(textArea_logging.getText());
 		if(sb.length() != 0) sb.append('\n');
 		sb.append(caller).append(": ").append(string);
-		textArea_logging.setText(sb.toString());
+		textArea_logging.setText(sb.toString());*/
 	}
 	
 	public void clearLogger() {
+		// This could maybe interfere with the queue
 		textArea_logging.setText("");
 	}
 	
@@ -138,63 +171,13 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 		return label_version.getText();
 	}
 	
-	public int getThreads() {
-		if(comboBox_threads == null) return 1;
-		return comboBox_threads.getSelectedIndex() + 1;
-	}
-	
-	public int getSearchDepth() {
-		if(comboBox_searchDepth == null) return 1;
-		return comboBox_searchDepth.getSelectedIndex() + 1;
-	}
-	
-	public String getSavePath() {
-		return getValidSavePath(textField_savePath.getText());
-	}
-	
-	public void setThreads(int threads) {
-		if(threads > comboBox_threads.getItemCount() + 1) {
-			threads = comboBox_threads.getItemCount() - 1;
-		}
-		
-		comboBox_threads.setSelectedIndex(threads - 1);
-	}
-	
-	public void setSearchDepth(int searchDepth) {
-		if(searchDepth > comboBox_searchDepth.getItemCount() + 1) {
-			searchDepth = comboBox_searchDepth.getItemCount() - 1;
-		}
-		
-		comboBox_searchDepth.setSelectedIndex(searchDepth - 1);
-	}
-	
-	public void setSavePath(String savePath) {
-		textField_savePath.setText(getValidSavePath(savePath));
-	}
-	
-	private String getValidSavePath(String savePath) {
-		if(savePath == null) {
-			String pluginHome = getDefaultSavePath();
-			File tracesPath = new File(pluginHome, "traces");
-			savePath = tracesPath.getAbsolutePath();
-		} else {
-			File tracesPath = new File(savePath);
-			if(!tracesPath.exists() || !tracesPath.isDirectory()) {
-				String pluginHome = getDefaultSavePath();
-				tracesPath = new File(pluginHome, "traces");
-				savePath = tracesPath.getAbsolutePath();
-			}
-		}
-		
-		return savePath;
-	}
-	
 	private void createComponent() {
 		mainPanel = new JPanel();
 		mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.X_AXIS));
 		
 
 		JSplitPane splitPane = new JSplitPane();
+		splitPane.setContinuousLayout(true);
 		mainPanel.add(splitPane);
 		
 		JPanel panelInformation = new JPanel();
@@ -301,8 +284,7 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 		
 		textField_savePath = new JTextField();
 		textField_savePath.setEditable(false);
-		textField_savePath.setText(getValidSavePath(getSavePath()));
-		textField_savePath.setText((String) null);
+		textField_savePath.setText(prefs.getTracePath());
 		textField_savePath.setMinimumSize(new Dimension(6, 21));
 		textField_savePath.setMaximumSize(new Dimension(2147483647, 21));
 		textField_savePath.setMargin(new Insets(0, 3, 0, 0));
@@ -321,10 +303,11 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 		btnBrowserPath.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if(fileChooser.isShowing()) return;
-				fileChooser.setCurrentDirectory(new File(getValidSavePath(textField_savePath.getText())));
+				fileChooser.setCurrentDirectory(new File(prefs.getTracePath()));
 				
 				File file = fileChooser.getSelectedFile();
 				if(file != null) {
+					prefs.setTracePath(file.getAbsolutePath());
 					textField_savePath.setText(file.getAbsolutePath());
 					fileChooser.close();
 				}
@@ -346,7 +329,7 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 		btnOpenSavePath.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent event) {
 				try {
-					File folder = new File(getValidSavePath(getSavePath()));
+					File folder = new File(prefs.getTracePath());
 					if(!folder.exists()) folder.mkdirs();
 					Desktop.getDesktop().open(folder);
 				} catch(IOException e) {
@@ -369,7 +352,8 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 			Integer[] array = new Integer[Runtime.getRuntime().availableProcessors() - 1];
 			for(int i = 0; i < array.length; i++) array[i] = Integer.valueOf(i + 1);
 			comboBox_threads.setModel(new DefaultComboBoxModel<>(array));
-			comboBox_threads.setSelectedIndex(array.length - 1);
+			comboBox_threads.setSelectedIndex(prefs.getNumThreads() - 1);
+			comboBox_threads.addActionListener(e -> prefs.setNumThreads(comboBox_threads.getSelectedIndex() + 1));
 		}
 		
 		GridBagConstraints gbc_comboBox = new GridBagConstraints();
@@ -390,6 +374,8 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 		comboBox_searchDepth = new JComboBox<Integer>();
 		comboBox_searchDepth.setFocusable(false);
 		comboBox_searchDepth.setModel(new DefaultComboBoxModel<>(new Integer[] { 1, 2, 3, 4, 5 }));
+		comboBox_searchDepth.setSelectedIndex(prefs.getSearchDepth() - 1);
+		comboBox_searchDepth.addActionListener(e -> prefs.setSearchDepth(comboBox_searchDepth.getSelectedIndex() + 1));
 		GridBagConstraints gbc_comboBox_1 = new GridBagConstraints();
 		gbc_comboBox_1.insets = new Insets(0, 0, 5, 0);
 		gbc_comboBox_1.fill = GridBagConstraints.HORIZONTAL;
@@ -448,9 +434,7 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 		gbc_btnNewButton_133.gridx = 0;
 		gbc_btnNewButton_133.gridy = 1;
 		panelData.add(btnScan, gbc_btnNewButton_133);
-		btnScan.addActionListener((event) -> {
-			plugin.startScan();
-		});
+		btnScan.addActionListener(e -> plugin.startScan());
 		
 		progressBar = new JProgressBar();
 		progressBar.setPreferredSize(new Dimension(146, 22));

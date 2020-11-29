@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<style>
+			* {
+				font-family: Sans-serif;
+			}
+			
+			body {
+				margin: 0;
+				overflow: hidden;
+			}
+			
+			.version {
+				font-size: 10px;
+			}
+			
+			.header {
+				text-align: center;
+				padding: 10px 0px 10px 0px;
+			}
+			
+			.search {
+				background-color: #777;
+				padding: 0px;
+			}
+			
+			input {
+				width: -webkit-fill-available;
+				width: -moz-available;
+				margin: 8px 5px 8px 5px;
+			}
+			
+			.page {
+				overflow-y: scroll;
+				overflow-x: hidden;
+				height: calc(100vh - 93px);
+			}
+			
+			#tree {
+				list-style: none;
+				padding: 16px 0px 16px 20px;
+				margin: 0px;
+			}
+			
+			li {
+				font-size: 13px;
+			}
+			
+			li > a {
+				text-decoration: none;
+				color: #05f;
+			}
+			
+			li > a:hover {
+				text-decoration: none;
+				color: #f70;
+			}
+		</style>
+		<script>
+			function search(value) {
+				var filter = value.toUpperCase();
+				
+				var element = document.getElementById('tree');
+				var li = element.getElementsByTagName('li');
+				
+				for(i = 0; i < li.length; i++) {
+					a = li[i].getElementsByTagName('a')[0];
+					txt = a.textContent || a.innerText;
+					if(txt.toUpperCase().indexOf(filter) > -1) {
+						li[i].style.display = "";
+					} else {
+						li[i].style.display = "none";
+					}
+				}
+			}
+		</script>
+	</head>
+	<body>
+		<div class="header"><span>Scrap&nbsp;Mechanic&nbsp;Docs</span><br><span class="version">{VERSION}v0.4.8.620<span></div>
+		<div class="search"><input placeholder="Search" oninput="search(this.value)" type="text" /></div>
+		<div class="page">
+			<ul title="Namespaces" id="tree">
+				<!-- Insert the tree here -->
+				<!-- {TREE} -->
+				<li><a target="view" href="panel.html#sm.physics">sm.physics</a></li>
+				<li><a target="view" href="panel.html#sm.terrainData">sm.terrainData</a></li>
+				<li><a target="view" href="panel.html#sm.json">sm.json</a></li>
+				<li><a target="view" href="panel.html#sm.noise">sm.noise</a></li>
+				<li><a target="view" href="panel.html#sm.util">sm.util</a></li>
+				<li><a target="view" href="panel.html#sm.projectile">sm.projectile</a></li>
+				<li><a target="view" href="panel.html#sm.melee">sm.melee</a></li>
+				<li><a target="view" href="panel.html#sm.game">sm.game</a></li>
+				<li><a target="view" href="panel.html#sm.creation">sm.creation</a></li>
+				<li><a target="view" href="panel.html#sm.cell">sm.cell</a></li>
+				<li><a target="view" href="panel.html#sm.network">sm.network</a></li>
+				<li><a target="view" href="panel.html#sm.storage">sm.storage</a></li>
+				<li><a target="view" href="panel.html#sm.event">sm.event</a></li>
+				<li><a target="view" href="panel.html#sm.log">sm.log</a></li>
+				<li><a target="view" href="panel.html#sm.debugDraw">sm.debugDraw</a></li>
+				<li><a target="view" href="panel.html#sm.ai">sm.ai</a></li>
+				<li><a target="view" href="panel.html#sm.item">sm.item</a></li>
+				<li><a target="view" href="panel.html#sm.challenge">sm.challenge</a></li>
+				<li><a target="view" href="panel.html#sm.construction">sm.construction</a></li>
+				<li><a target="view" href="panel.html#sm.shape">sm.shape</a></li>
+				<li><a target="view" href="panel.html#sm.body">sm.body</a></li>
+				<li><a target="view" href="panel.html#sm.interactable">sm.interactable</a></li>
+				<li><a target="view" href="panel.html#sm.joint">sm.joint</a></li>
+				<li><a target="view" href="panel.html#sm.container">sm.container</a></li>
+				<li><a target="view" href="panel.html#sm.quest">sm.quest</a></li>
+				<li><a target="view" href="panel.html#sm.harvestable">sm.harvestable</a></li>
+				<li><a target="view" href="panel.html#sm.world">sm.world</a></li>
+				<li><a target="view" href="panel.html#sm.character">sm.character</a></li>
+				<li><a target="view" href="panel.html#sm.player">sm.player</a></li>
+				<li><a target="view" href="panel.html#sm.unit">sm.unit</a></li>
+				<li><a target="view" href="panel.html#sm.aiState">sm.aiState</a></li>
+				<li><a target="view" href="panel.html#sm.areaTrigger">sm.areaTrigger</a></li>
+				<li><a target="view" href="panel.html#sm.portal">sm.portal</a></li>
+				<li><a target="view" href="panel.html#sm.lift">sm.lift</a></li>
+				<li><a target="view" href="panel.html#sm.vec3">sm.vec3</a></li>
+				<li><a target="view" href="panel.html#sm.quat">sm.quat</a></li>
+				<li><a target="view" href="panel.html#sm.uuid">sm.uuid</a></li>
+				<li><a target="view" href="panel.html#sm.color">sm.color</a></li>
+				<li><a target="view" href="panel.html#sm.raycastResult">sm.raycastResult</a></li>
+				<li><a target="view" href="panel.html#sm.pathfinder">sm.pathfinder</a></li>
+				<li><a target="view" href="panel.html#sm.pathNode">sm.pathNode</a></li>
+				<li><a target="view" href="panel.html#sm.gui">sm.gui</a></li>
+				<li><a target="view" href="panel.html#sm.gui.widget">sm.gui.widget</a></li>
+				<li><a target="view" href="panel.html#sm.gui.interface">sm.gui.interface</a></li>
+				<li><a target="view" href="panel.html#sm.audio">sm.audio</a></li>
+				<li><a target="view" href="panel.html#sm.effect">sm.effect</a></li>
+				<li><a target="view" href="panel.html#sm.particle">sm.particle</a></li>
+				<li><a target="view" href="panel.html#sm.tool">sm.tool</a></li>
+				<li><a target="view" href="panel.html#sm.render">sm.render</a></li>
+				<li><a target="view" href="panel.html#sm.camera">sm.camera</a></li>
+				<li><a target="view" href="panel.html#sm.localPlayer">sm.localPlayer</a></li>
+				<li><a target="view" href="panel.html#sm.visualization">sm.visualization</a></li>
+				<li><a target="view" href="panel.html#sm.terrainTile">sm.terrainTile</a></li>
+				<li><a target="view" href="panel.html#sm.terrainGeneration">sm.terrainGeneration</a></li>
+			</ul>
+		</div>
+	</body>
+</html>

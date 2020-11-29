@@ -3,22 +3,33 @@ package sm.hardcoded.plugin.tracer;
 import java.util.ArrayList;
 import java.util.List;
 
+import sm.hardcoded.plugin.exporter.JsonExporter;
 import sm.hardcoded.plugin.tracer.CodeSyntaxTreeAnalyser.TracedFunction;
 
 /**
  * A class object for all sm objects.
  * 
- * @date 2020-11-24
  * @author HardCoded
+ * @date 2020-11-24
  */
-class SMClass {
-	protected List<SMClass> classes;
-	protected List<Function> functions;
-	protected List<Constant> constants;
+public class SMClass {
+	protected final List<SMClass> classes;
+	protected final List<Function> functions;
+	protected final List<Constant> constants;
+	protected String path;
 	protected String name;
 	
 	public SMClass(String name) {
+		this(null, name);
+	}
+	
+	public SMClass(String parent, String name) {
 		this.name = name;
+		if(parent == null) {
+			path = name;
+		} else {
+			path = parent + '.' + name;
+		}
 		
 		classes = new ArrayList<>();
 		functions = new ArrayList<>();
@@ -54,7 +65,7 @@ class SMClass {
 			if(index < 0) {
 				if(find != null) return find;
 				
-				SMClass clazz = new SMClass(name);
+				SMClass clazz = new SMClass(path, name);
 				classes.add(clazz);
 				return clazz;
 			} else {
@@ -62,13 +73,16 @@ class SMClass {
 				if(find != null) {
 					clazz = find;
 				} else {
-					clazz = new SMClass(name.substring(0, index));
+					clazz = new SMClass(path, name.substring(0, index));
 					classes.add(clazz);
 				}
 				
 				return clazz.createClass(name);
 			}
 		}
+		
+		if(name.equals(this.name))
+			return this;
 		
 		// This should return an error.
 		return null;
@@ -81,13 +95,18 @@ class SMClass {
 	}
 	
 	public Function createFunction(String address, String name, boolean local) {
-		Function function = new Function(address, name, local);
+		Function function = new Function(path, address, name, local);
 		functions.add(function);
 		return function;
 	}
 	
 	@Override
 	public String toString() {
+		if(true) {
+			return JsonExporter.serialize(this).toString(false);
+		}
+		
+		@SuppressWarnings("unused")
 		StringBuilder sb = new StringBuilder();
 		sb.append(name).append(" = {");
 		int length = constants.size() + classes.size() + functions.size() - 1;
@@ -118,7 +137,8 @@ class SMClass {
 		return sb.append("}").toString();
 	}
 	
-	static class Constant {
+	
+	public static class Constant {
 		private final String address;
 		private final String name;
 		private final String value;
@@ -132,6 +152,10 @@ class SMClass {
 			} else {
 				this.value = value == null ? "nil":value.toString();
 			}
+		}
+		
+		public String getName() {
+			return name;
 		}
 		
 		public String getAddress() {
@@ -153,13 +177,15 @@ class SMClass {
 		}
 	}
 	
-	static class Function {
+	public static class Function {
+		private final String parentPath;
 		private final String address;
 		private final String name;
 		private final boolean local;
 		private TracedFunction trace;
 		
-		private Function(String address, String name, boolean local) {
+		private Function(String parentPath, String address, String name, boolean local) {
+			this.parentPath = parentPath;
 			this.address = address;
 			this.name = name;
 			this.local = local;
@@ -173,8 +199,16 @@ class SMClass {
 			return name;
 		}
 		
+		public String getParentPath() {
+			return parentPath;
+		}
+		
 		public TracedFunction getTrace() {
 			return trace;
+		}
+		
+		public boolean isUserdata() {
+			return local;
 		}
 		
 		public int hashCode() {
@@ -190,6 +224,7 @@ class SMClass {
 			this.trace = trace;
 		}
 		
+		// Ugly
 		public String toString() {
 			StringBuilder sb = new StringBuilder();
 			if(local) sb.append("[userdata] ");
@@ -227,6 +262,22 @@ class SMClass {
 		}
 		
 		return set;
+	}
+	
+	public List<SMClass> getClasses() {
+		return List.copyOf(classes);
+	}
+	
+	public List<Constant> getConstants() {
+		return List.copyOf(constants);
+	}
+	
+	public List<Function> getFunctions() {
+		return List.copyOf(functions);
+	}
+	
+	public String getPath() {
+		return path;
 	}
 	
 	public Function getFunction(String name) {

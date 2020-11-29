@@ -3,6 +3,8 @@ package sm.hardcoded.plugin.tracer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import ghidra.app.cmd.function.DecompilerParameterIdCmd;
 import ghidra.app.decompiler.DecompInterface;
@@ -19,7 +21,7 @@ import sm.hardcoded.plugin.tracer.CodeSyntaxTreeAnalyser.NodeFunction;
 import sm.hardcoded.plugin.tracer.CodeSyntaxTreeAnalyser.TracedFunction;
 
 /**
- * It is important that this class is not called from multiple threads
+ * It is important that this class is not called from multiple threads.
  * 
  * @author HardCoded
  * @date 2020-11-25
@@ -31,6 +33,8 @@ class CodeSyntaxResolver {
 	private final FunctionManager functionManager;
 	private final Program currentProgram;
 	private boolean debug;
+	
+	public static ConcurrentHashMap<String, Integer> test = new ConcurrentHashMap<>();
 	
 	public CodeSyntaxResolver(CodeSyntaxTreeAnalyser cta, DecompInterface decomp) {
 		this.cta = cta;
@@ -89,17 +93,23 @@ class CodeSyntaxResolver {
 				list = combined;
 			}
 		} catch(Exception e) {
-			e.printStackTrace();
+			Logger.log(e);
 		}
 		
 		return unit;
 	}
+	
+	private static AtomicInteger atom = new AtomicInteger();
 	
 	private List<NodeFunction> findChildren(CodeSyntaxTreeUnit unit, NodeFunction node) {
 		// Clean function variable
 		unit.clean();
 		
 		try {
+			if(test.contains(node.address.toString())) {
+				// Do not rescan the node
+			}
+			
 			Function function = functionManager.getFunctionAt(node.address);
 			decomp.setSimplificationStyle("decompile");
 			DecompileResults result = decomp.decompileFunction(function, 20, TaskMonitor.DUMMY);
@@ -108,14 +118,20 @@ class CodeSyntaxResolver {
 			}
 			
 			node.high = result.getHighFunction();
-			for(PcodeBlockBasic block : result.getHighFunction().getBasicBlocks()) {
+			for(PcodeBlockBasic block : node.high.getBasicBlocks()) {
 				Iterator<PcodeOp> iter = block.getIterator();
 				while(iter.hasNext()) {
 					unit.process(node, iter.next());
 				}
 			}
+			
+			if(!test.contains(node.address.toString())) {
+				test.put(node.address.toString(), 2);
+			} else {
+				System.out.println("Already has: " + node + ", " + atom.getAndIncrement());
+			}
 		} catch(Exception e) {
-			e.printStackTrace();
+			Logger.log(e);
 		}
 		
 		return unit.getFunctionsCopy();
@@ -146,7 +162,7 @@ class CodeSyntaxResolver {
 				}
 			}
 		} catch(Exception e) {
-			e.printStackTrace();
+			Logger.log(e);
 		}
 		
 		return unit.getFunctionsCopy();

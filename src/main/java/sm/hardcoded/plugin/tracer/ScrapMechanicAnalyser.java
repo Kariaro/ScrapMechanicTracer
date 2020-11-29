@@ -3,6 +3,7 @@ package sm.hardcoded.plugin.tracer;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import ghidra.app.decompiler.DecompInterface;
 import ghidra.program.model.address.AddressFactory;
@@ -13,11 +14,12 @@ import sm.hardcoded.plugin.tracer.CodeSyntaxTreeAnalyser.TracedFunction;
 /**
  * Used to analsyse a scrap mechanic executable.
  * 
- * @date 2020-11-22
  * @author HardCoded
+ * @date 2020-11-22
  */
 class ScrapMechanicAnalyser {
 	private final ScrapMechanicPlugin plugin;
+	private final SMPrefs prefs;
 	
 	private TableElementFinder elementFinder;
 	private TableFinder tableFinder;
@@ -32,6 +34,7 @@ class ScrapMechanicAnalyser {
 	
 	public ScrapMechanicAnalyser(ScrapMechanicPlugin tool) {
 		plugin = tool;
+		prefs = tool.getPreferences();
 		
 		elementFinder = new TableElementFinder(tool);
 		tableFinder = new TableFinder(tool);
@@ -69,7 +72,7 @@ class ScrapMechanicAnalyser {
 		try {
 			programMemory.loadMemory();
 		} catch(MemoryAccessException e) {
-			e.printStackTrace();
+			Logger.log(e);
 			errorMessage = "Failed to load memory\n" + e.getMessage();
 			return false;
 		}
@@ -81,7 +84,7 @@ class ScrapMechanicAnalyser {
 			// Try import lua functions and categories
 			luaImporter.initialize();
 		} catch(Exception e) {
-			e.printStackTrace();
+			Logger.log(e);
 		}
 		
 		List<FunctionPointer> tables = tableFinder.findFunctionTable();
@@ -137,7 +140,7 @@ class ScrapMechanicAnalyser {
 //				System.out.println(func);
 //			} catch(Exception e) {
 //				decomp.closeProgram();
-//				e.printStackTrace();
+//				Logger.log(e);
 //			} finally {
 //				decomp.closeProgram();
 //			}
@@ -148,7 +151,7 @@ class ScrapMechanicAnalyser {
 		try {
 			scanAllFunctions(table);
 		} catch(Exception e) {
-			e.printStackTrace();
+			Logger.log(e);
 		} finally {
 			// Make sure we close it
 			isRunning = false;
@@ -159,6 +162,9 @@ class ScrapMechanicAnalyser {
 		//     file path 'provider.getScanPath()' and give it the file name
 		//     lua.<Version>.<Date yyyy.mm.dd.hh.MM.ss>.log
 		save(table);
+		
+		// Testing
+		//SMHtml.generate(prefs, provider.getVersionString(), table);
 		
 		provider.writeLog(this, "Done. Took " + (System.currentTimeMillis() - startTime) + " ms");
 		return true;
@@ -176,16 +182,22 @@ class ScrapMechanicAnalyser {
 			// This will remove all functions that link to the same address.
 			Set.copyOf(functions)
 		);
-		while(queue.size() > 30) queue.poll();
+//		for(SMClass.Function func : functions) {
+//			if(!func.getParentPath().equals("sm.shape")) {
+//				queue.remove(func);
+//			}
+//		}
 		
 		final int originalSize = queue.size();
+		final AtomicInteger atom = new AtomicInteger(originalSize);
 		final Map<String, TracedFunction> mappings = new HashMap<>();
 		provider.setProgressBar(0);
 		
 		ThreadGroup group = new ThreadGroup("SMDecompiler Group");
 		List<Thread> threads = new ArrayList<>();
-		
-		final int numThreads = provider.getThreads();
+
+		final int searchDepth = prefs.getSearchDepth();
+		final int numThreads = prefs.getNumThreads();
 		for(int i = 0; i < numThreads; i++) {
 			final int id = i;
 			final String workerName = String.format("[Worker ID#%2d]", id);
@@ -208,16 +220,17 @@ class ScrapMechanicAnalyser {
 						pointer = queue.poll();
 						if(pointer == null) break;
 						
-						TracedFunction trace = resolver.analyse(pointer, 2);
+						TracedFunction trace = resolver.analyse(pointer, searchDepth);
 						mappings.put(pointer.getAddress(), trace);
 						pointer.setTrace(trace);
 						provider.writeLog(workerName, "Exploring: " + pointer.toString());
 						
-						provider.setProgressBar((originalSize - queue.size()) / (0.0 + originalSize));
+						int size = atom.decrementAndGet();
+						provider.setProgressBar((originalSize - size) / (0.0 + originalSize));
 					}
 				} catch(Exception e) {
 					decomp.closeProgram();
-					e.printStackTrace();
+					Logger.log(e);
 				} finally {
 					decomp.closeProgram();
 				}
@@ -250,7 +263,7 @@ class ScrapMechanicAnalyser {
 	private void save(SMClass table) {
 		ScrapMechanicWindowProvider provider = plugin.getWindow();
 		provider.writeLog(this, "Saving");
-		File file = new File(provider.getSavePath());
+		File file = new File(prefs.getTracePath());
 		file.mkdirs();
 		
 		String traceString = table.toString();
@@ -258,7 +271,7 @@ class ScrapMechanicAnalyser {
 		try(DataOutputStream stream = new DataOutputStream(new FileOutputStream(traceFile))) {
 			stream.write(traceString.getBytes());
 		} catch(IOException e) {
-			e.printStackTrace();
+			Logger.log(e);
 		}
 	}
 	

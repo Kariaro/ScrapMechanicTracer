@@ -203,7 +203,7 @@ class LuaFunctionImporter {
 			try {
 				applySignature(symbol, signature);
 			} catch(Exception e) {
-				e.printStackTrace();
+				Logger.log(e);
 			}
 		}
 		

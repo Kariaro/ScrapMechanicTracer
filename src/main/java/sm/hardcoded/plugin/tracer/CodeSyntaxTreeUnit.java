@@ -291,6 +291,7 @@ class CodeSyntaxTreeUnit {
 			Varnode[] pushin = utils.getInputs(pushs, node);
 			String format = utils.resolveConstantStringNoNull(pushin[2]);
 			
+			// Expected userdata, got %s
 			if(format.endsWith(" expected, got %s")) {
 				format = format.substring(0, format.length() - 17);
 				if(format.endsWith("%s")) {

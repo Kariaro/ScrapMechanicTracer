@@ -17,7 +17,9 @@ import ghidra.util.Msg;
 import ghidra.util.task.TaskMonitor;
 import sm.hardcoded.plugin.tracer.LuaTypeManager.Type;
 
-class CodeSyntaxTreeAnalyser {
+// TODO: Check the content of MULTIEQUAL PcodeOp types
+
+public class CodeSyntaxTreeAnalyser {
 	protected final ScrapMechanicPlugin plugin;
 	protected final LuaTypeManager typeManager;
 	
@@ -34,7 +36,7 @@ class CodeSyntaxTreeAnalyser {
 	protected Varnode stackVarnode;
 	private Map<Long, ExternalLocation> externalLocationCache;
 	
-	public void init() {
+	protected void init() {
 		currentProgram = plugin.getCurrentProgram();
 		if(currentProgram == null) throw new NullPointerException("plugin.getCurrentProgram() was null");
 		
@@ -55,7 +57,7 @@ class CodeSyntaxTreeAnalyser {
 	}
 	
 	// TODO: Make sure that this function is only run once for each function.
-	public boolean discoverCode(Address entry) {
+	protected boolean discoverCode(Address entry) {
 		Function function = functionManager.getFunctionAt(entry);
 		
 		if(function == null) {
@@ -89,22 +91,22 @@ class CodeSyntaxTreeAnalyser {
 		return true;
 	}
 	
-	public Address getAddress(Varnode varnode) {
+	protected Address getAddress(Varnode varnode) {
 		if(varnode == null) return null;
 		return getAddress(varnode.getOffset());
 	}
 	
-	public Address getAddress(String str) {
+	protected Address getAddress(String str) {
 		return addressFactory.getAddress(str);
 	}
 	
-	public Address getAddress(long offset) {
+	protected Address getAddress(long offset) {
 		return addressFactory.getAddress(Long.toHexString(offset));
 	}
 	
 	// TODO: Maybe cache all lua functions before we start the analysis.
 	// What if this causes threads to slowdown or become inconsistent?
-	public ExternalLocation getExternalLocation(Varnode varnode) {
+	protected ExternalLocation getExternalLocation(Varnode varnode) {
 		if(varnode == null) return null;
 		long offset = varnode.getOffset();
 		
@@ -121,7 +123,7 @@ class CodeSyntaxTreeAnalyser {
 		return location;
 	}
 	
-	public Varnode resolveUnique(Varnode varnode) {
+	protected Varnode resolveUnique(Varnode varnode) {
 		if(varnode == null) return null;
 		
 		PcodeOp def = varnode.getDef();
@@ -139,22 +141,22 @@ class CodeSyntaxTreeAnalyser {
 		return null;
 	}
 	
-	public String resolveConstantString(Varnode varnode) {
+	protected String resolveConstantString(Varnode varnode) {
 		if(varnode == null || !varnode.isConstant()) return null;
 		return programMemory.readTerminatedString(getAddress(varnode));
 	}
 	
-	public String resolveConstantStringNoNull(Varnode varnode) {
+	protected String resolveConstantStringNoNull(Varnode varnode) {
 		if(varnode == null || !varnode.isConstant()) return "";
 		String str = programMemory.readTerminatedString(getAddress(varnode));
 		return str == null ? "":str;
 	}
 	
-	public Varnode getVarnode(String spaceName, int offset, int size) {
+	protected Varnode getVarnode(String spaceName, int offset, int size) {
 		return new Varnode(addressFactory.getAddressSpace(spaceName).getAddress(offset), size);
 	}
 	
-	public Varnode[] getInputs(PcodeOp op, NodeFunction node) {
+	protected Varnode[] getInputs(PcodeOp op, NodeFunction node) {
 		Varnode[] inputs = op.getInputs().clone();
 		FunctionPrototype fp = node.high.getFunctionPrototype();
 		
@@ -185,7 +187,7 @@ class CodeSyntaxTreeAnalyser {
 					switch(def.getOpcode()) {
 						case PcodeOp.CAST: replace = def.getInput(0); break;
 						case PcodeOp.INT_ZEXT: replace = def.getInput(0); break;
-						// case PcodeOp.TRUNC: replace = def.getInput(0); break;
+						case PcodeOp.FLOAT_TRUNC: replace = def.getInput(0); break;
 						default: {
 							// ????
 						}
@@ -206,6 +208,7 @@ class CodeSyntaxTreeAnalyser {
 					Varnode replace = null;
 					switch(def.getOpcode()) {
 						case PcodeOp.COPY: replace = def.getInput(0); break;
+						case PcodeOp.CAST: replace = def.getInput(0); break;
 						case PcodeOp.PTRSUB: replace = def.getInput(1); break;
 						default: {
 							// ??? Branches probably
@@ -226,7 +229,7 @@ class CodeSyntaxTreeAnalyser {
 	
 	
 	
-	static class TracedFunction {
+	public static class TracedFunction {
 		Long minimum_args;
 		Long maximum_args;
 		String sandbox;
@@ -234,12 +237,24 @@ class CodeSyntaxTreeAnalyser {
 		Map<Long, List<String>> bad_args;
 		Map<Long, List<String>> args;
 		
-		TracedFunction() {
+		public TracedFunction() {
 			bad_args = new HashMap<>();
 			args = new HashMap<>();
 		}
 		
-		void addType(long id, String type) {
+		public void setMinimumArgs(Long min) {
+			this.minimum_args = min;
+		}
+		
+		public void setMaximumArgs(Long max) {
+			this.maximum_args = max;
+		}
+		
+		public void setSandbox(String sandbox) {
+			this.sandbox = sandbox;
+		}
+		
+		public void addType(long id, String type) {
 			if(id < 1 || id > 32) {
 				addBadType(id, type);
 				return;
@@ -310,7 +325,7 @@ class CodeSyntaxTreeAnalyser {
 			return result;
 		}
 		
-		public String prettify(String name) {
+		private String prettify(String name) {
 			String last = name.substring(1);
 			
 			// This is a hack
@@ -321,6 +336,14 @@ class CodeSyntaxTreeAnalyser {
 			if(name.equals("raycastresult")) return "RaycastResult";
 			
 			return Character.toUpperCase(name.charAt(0)) + last;
+		}
+		
+		public Long getMinArgs() {
+			return minimum_args;
+		}
+		
+		public Long getMaxArgs() {
+			return maximum_args;
 		}
 		
 		public String getSizeString() {
@@ -360,6 +383,10 @@ class CodeSyntaxTreeAnalyser {
 				getSandbox(),
 				getSizeString()
 			);
+		}
+
+		public List<String> getArgument(long min) {
+			return args.get(min);
 		}
 	}
 	

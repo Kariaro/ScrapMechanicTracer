@@ -1,6 +1,6 @@
-# ScrapMechanicTracer & API Documentation
+# Scrap Mechanic Tracer & API Documentation
 
-This is a plugin for ghidra and was created to make modding easier for the game ScrapMechanic.
+This is a plugin for ghidra and was created to make modding easier for the game Scrap Mechanic.
 Because most commands are not documented this plugin was made to get all the function arguments
 and to dump them to a readable file. Here are some example on how the traces will look: [Examples](../master/res/traces).
 

@@ -4,3 +4,5 @@
 /dist/
 /build/
 /.classpath.bck
+/.settings/
+/.antProperties.xml

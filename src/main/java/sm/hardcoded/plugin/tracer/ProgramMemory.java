@@ -12,8 +12,8 @@ import ghidra.program.model.mem.MemoryBlock;
 /**
  * Reads the full content of a ghidra program and caches it.
  * 
- * @date 2020-11-22
  * @author HardCoded
+ * @date 2020-11-22
  */
 class ProgramMemory {
 	private final ScrapMechanicPlugin plugin;

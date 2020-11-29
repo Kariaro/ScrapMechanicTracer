@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<style>
+			* {
+				font-family: Sans-serif;
+				overflow-wrap: break-word;
+			}
+			
+			a {
+				text-decoration: none;
+			}
+			
+			pre {
+				font-family: monospace;
+				white-space: pre-wrap;
+				white-space: -moz-pre-wrap;
+				white-space: -pre-wrap;
+				white-space: -o-pre-wrap;
+				word-wrap: break-word;
+			}
+			
+			body {
+				margin: 0;
+			}
+			
+			.header {
+				text-align: center;
+				padding: 10px 0px 10px 0px;
+				background-color: #ccc;
+			}
+			
+			.function {
+				border: 1px solid #ccc;
+				background-color: #fff;
+				overflow: hidden;
+				margin: 15px;
+			}
+			
+			.functionHeader {
+				font-size: 18px;
+				padding: 3px 5px;
+				border-bottom: 1px solid #ccc;
+				background-color: #ccf;
+			}
+			
+			ul.blocks {
+				list-style: none;
+				margin: 10px 0 10px 0;
+				padding: 0;
+			}
+			
+			li.blocks {
+				list-style:none;
+				margin:20px;
+				border:1px solid #ccc;
+				background-color:#eee;
+				overflow:hidden;
+			}
+			
+			h4 {
+				padding:0px;
+				margin:10px;
+			}
+			
+			.functionContent {
+				margin:10px;
+			}
+			
+			.functionDefinition {
+				font-family:monospace;
+			}
+			
+			.sandbox {
+				font-size:12px;
+				font-family:monospace;
+				display:block;
+				color:#f33;
+			}
+			
+			/* monospaced */
+			.ms {
+				font-family:monospace;
+			}
+			
+			#namespaceContent {
+				width: 100%;
+				height: 100%;
+			}
+			
+			#namespaceTable {
+				width: 100%;
+				height: 100%;
+			}
+			
+			.define {
+				border: 1px solid #ccc;
+				background-color: #fff;
+				overflow: hidden;
+				margin: 15px;
+			}
+			
+			.defineHeader {
+				font-size: 18px;
+				padding: 3px 5px;
+				border-bottom: 1px solid #ccc;
+				background-color: #ccf;
+			}
+			
+			.define a {
+				color: #000;
+			}
+			
+			.defineHeader a:hover {
+				color: #fff;
+			}
+			
+			.define {
+				background-color: #fff;
+				margin:10px;
+			}
+			
+			.defineContent p {
+				background-color: #fff;
+				margin: 0px;
+				padding: 4px;
+			}
+			
+			.defineContent p:nth-child(even) {
+				background-color: #f7f7f7;
+			}
+			
+			p.ms {
+				background-color: #fff;
+				margin: 0px;
+				padding: 5px;
+			}
+			
+			p.ms a {
+				font-family:monospace;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="header"><span>Navbar</span></div>
+		<div id="namespaceTable">
+			<ul class="blocks">
+				<li class="blocks">
+					<h4>PageContent</h4>
+					<ul class="blocks">
+						<li class="define">
+							<div class="defineHeader"><a href="#namespace_contants">Constants</a></div>
+							<div class="defineContent">{TABLE_CONSTANTS}</div>
+						</li>
+						<li class="define">
+							<div class="defineHeader"><a href="#namespace_tabledata">Tabledata</a></div>
+							<div class="defineContent">{TABLE_TABLEDATA}</div>
+						</li>
+						<li class="define">
+							<div class="defineHeader"><a href="#namespace_userdata">Userdata</a></div>
+							<div class="defineContent">{TABLE_USERDATA}</div>
+						</li>
+					</ul>
+				</li>
+			<ul>
+		</div>
+		<div id="namespaceContent">
+			<ul class="blocks">
+				<li class="blocks">
+					<a name="namespace_contants"></a>
+					<h4>Constants</h4>
+					<ul class="blocks">{CONSTANTS}</ul>
+				</li>
+				<li class="blocks">
+					<a name="namespace_tabledata"></a>
+					<h4>Tabledata</h4>
+					<ul class="blocks">{TABLEDATA}</ul>
+				</li>
+				<li class="blocks">
+					<a name="namespace_userdata"></a>
+					<h4>Userdata</h4>
+					<ul class="blocks">{USERDATA}</ul>
+				</li>
+			</ul>
+		</div>
+	</body>
+</html>

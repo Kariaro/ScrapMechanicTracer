@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<style>
+			* {
+				font-family: Sans-serif;
+			}
+			
+			body {
+				margin: 0;
+				overflow: hidden;
+			}
+			
+			.version {
+				font-size: 10px;
+			}
+			
+			.header {
+				text-align: center;
+				padding: 10px 0px 10px 0px;
+			}
+			
+			.search {
+				background-color: #777;
+				padding: 0px;
+			}
+			
+			input {
+				width: -webkit-fill-available;
+				width: -moz-available;
+				margin: 8px 5px 8px 5px;
+			}
+			
+			.page {
+				overflow-y: scroll;
+				overflow-x: hidden;
+				height: calc(100vh - 93px);
+			}
+			
+			#tree {
+				list-style: none;
+				padding: 16px 0px 16px 20px;
+				margin: 0px;
+			}
+			
+			li {
+				font-size: 13px;
+			}
+			
+			li > a {
+				text-decoration: none;
+				color: #05f;
+			}
+			
+			li > a:hover {
+				text-decoration: none;
+				color: #f70;
+			}
+		</style>
+		<script>
+			function search(value) {
+				var element = document.getElementById('tree');
+				var li = element.getElementsByTagName('li');
+				var filter = value.toUpperCase();
+				for(i = 0; i < li.length; i++) {
+					a = li[i].getElementsByTagName('a')[0];
+					txt = a.textContent || a.innerText;
+					if(txt.toUpperCase().indexOf(filter) > -1) {
+						li[i].style.display = "";
+					} else {
+						li[i].style.display = "none";
+					}
+				}
+			}
+		</script>
+	</head>
+	<body>
+		<div class="header"><span>Scrap&nbsp;Mechanic&nbsp;Docs</span><br><span class="version">{VERSION}<span></div>
+		<div class="search"><input placeholder="Search" oninput="search(this.value)" type="text" /></div>
+		<div class="page"><ul title="Namespaces" id="tree">{TREE}</ul></div>
+	</body>
+</html>

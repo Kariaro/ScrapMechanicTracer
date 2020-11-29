@@ -7,6 +7,7 @@ import ghidra.program.model.address.Address;
  * when creating a new element in the global lua table.
  * 
  * @author HardCoded
+ * @date 2020-11-27
  */
 class SMDefinition {
 	// Function address

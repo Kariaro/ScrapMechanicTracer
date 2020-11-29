@@ -7,28 +7,32 @@ import ghidra.util.SystemUtilities;
  * 
  * @author HardCoded
  */
-class Logger {
-	static boolean check() {
+public class Logger {
+	public static boolean check() {
 		return SystemUtilities.isInDevelopmentMode();
 	}
 	
-	static void print(Object o) {
+	public static void print(Object o) {
 		if(!check()) return;
 		System.out.print(o);
 	}
 	
-	static void println(Object o) {
+	public static void println(Object o) {
 		if(!check()) return;
 		System.out.println(o);
 	}
 	
-	static void println() {
+	public static void println() {
 		if(!check()) return;
 		System.out.println();
 	}
 	
-	static void printf(String format, Object... args) {
+	public static void printf(String format, Object... args) {
 		if(!check()) return;
 		System.out.printf(format, args);
+	}
+	
+	public static void log(Throwable t) {
+		if(t != null) t.printStackTrace();
 	}
 }

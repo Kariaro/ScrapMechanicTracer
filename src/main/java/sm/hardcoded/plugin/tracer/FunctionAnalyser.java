@@ -8,9 +8,8 @@ import ghidra.program.model.listing.Program;
  * Analyse a {@code SMDefinition} and add bookmarks for each
  * user and table function found. 
  * 
- * @date 2020-11-22
  * @author HardCoded
- *
+ * @date 2020-11-22
  */
 class FunctionAnalyser {
 	private final ScrapMechanicPlugin plugin;
