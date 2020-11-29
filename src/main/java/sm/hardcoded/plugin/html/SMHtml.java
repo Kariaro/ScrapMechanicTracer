@@ -201,16 +201,14 @@ public class SMHtml {
 	
 	private static String generateFunction(Function func) {
 		String template =
-"""
-<a name="{LINK}"></a>
-<li class="function">
-	<div class="functionHeader">{NAME}</div>
-	<div class="functionContent">
-		<pre>{DATA}</pre>
-		<span class="sandbox">{SANDBOX}</span><br>
-	</div>
-</li>
-""";
+"<a name=\"{LINK}\"></a>\n" +
+"<li class=\"function\">\n" +
+"	<div class=\"functionHeader\">{NAME}</div>\n" +
+"	<div class=\"functionContent\">\n" +
+"		<pre>{DATA}</pre>\n" +
+"		<span class=\"sandbox\">{SANDBOX}</span><br>\n" +
+"	</div>\n" +
+"</li>";
 		
 		String result = template.replace("{NAME}", func.getName())
 								.replace("{DATA}", func.toString())
@@ -232,16 +230,14 @@ public class SMHtml {
 	
 	private static String generateConstant(Constant con) {
 		String template =
-"""
-<a name="{LINK}"></a>
-<li class="function">
-	<div class="functionHeader">{NAME}</div>
-	<div class="functionContent">
-		<pre>{DATA}</pre>
-		<span class="sandbox">{SANDBOX}</span><br>
-	</div>
-</li>
-""";
+"<a name=\"{LINK}\"></a>\n" +
+"<li class=\"function\">\n" +
+"	<div class=\"functionHeader\">{NAME}</div>\n" +
+"	<div class=\"functionContent\">\n" +
+"		<pre>{DATA}</pre>\n" +
+"		<span class=\"sandbox\">{SANDBOX}</span><br>\n" +
+"	</div>\n" +
+"</li>";
 		
 		String result = template.replace("{NAME}", con.getName())
 								.replace("{DATA}", con.toString())

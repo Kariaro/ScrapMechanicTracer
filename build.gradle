@@ -15,7 +15,7 @@
 // for the correction version of Gradle to use for the Ghidra installation you specify.
 
 //----------------------START "DO NOT MODIFY" SECTION------------------------------
-def ghidraInstallDir = "C:/ghidra_9.1.2_PUBLIC"
+def ghidraInstallDir = "C:/ghidra/ghidra_9.2_PUBLIC"
 
 if (System.env.GHIDRA_INSTALL_DIR) {
 	ghidraInstallDir = System.env.GHIDRA_INSTALL_DIR

@@ -74,7 +74,7 @@ class CodeSyntaxResolver {
 				}
 				
 				// Rescan the function now that we have discovered the parameter ids
-				DecompilerParameterIdCmd decompId = new DecompilerParameterIdCmd(fullSet, SourceType.ANALYSIS, true, true, 400);
+				DecompilerParameterIdCmd decompId = new DecompilerParameterIdCmd("SMTracer", fullSet, SourceType.ANALYSIS, true, true, 400);
 				if(!decompId.applyTo(currentProgram)) {
 					System.out.println("Failed to decompile parameter message: " + decompId.getStatusMsg());
 				}
@@ -149,7 +149,7 @@ class CodeSyntaxResolver {
 		try {
 			Function function = functionManager.getFunctionAt(node.address);
 			decomp.setSimplificationStyle("firstpass");
-			DecompileResults result = decomp.decompileFunction(function, 10, TaskMonitor.DUMMY);
+			DecompileResults result = decomp.decompileFunction(function, 20, TaskMonitor.DUMMY);
 			if(!result.decompileCompleted()) {
 				throw new Exception("Failed decompile the function at [ " + node.address + " ] " + result.getErrorMessage());
 			}

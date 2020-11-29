@@ -657,7 +657,7 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 				file.mkdirs();
 				
 				String traceString = smm_json.toString();
-				File outputFile = new File(file, "simpleJson." + version + "." + System.currentTimeMillis() + ".json");
+				File outputFile = new File(file, "api." + version + "." + System.currentTimeMillis() + ".json");
 				try(DataOutputStream stream = new DataOutputStream(new FileOutputStream(outputFile))) {
 					stream.write(traceString.getBytes());
 				} catch(IOException e) {

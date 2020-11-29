@@ -166,7 +166,7 @@ public class CodeSyntaxTreeAnalyser {
 			
 			String str_0 = varnode.toString();
 			for(int j = 0; j < Math.min(node.parameters.length, fp.getNumParams()); j++) {
-				Varnode var = fp.getParam(j).getRepresentative();
+				Varnode var = fp.getParam(j).getHighVariable().getRepresentative();
 				String str_1 = var.toString();
 				
 				if(str_0.equals(str_1)) {
