@@ -236,10 +236,12 @@ public class CodeSyntaxTreeAnalyser {
 		
 		Map<Long, List<String>> bad_args;
 		Map<Long, List<String>> args;
+		List<String> returns;
 		
 		public TracedFunction() {
 			bad_args = new HashMap<>();
 			args = new HashMap<>();
+			returns = new ArrayList<>();
 		}
 		
 		public void setMinimumArgs(Long min) {
@@ -285,6 +287,13 @@ public class CodeSyntaxTreeAnalyser {
 			} else if(!list.contains(type)) {
 				list.add(type);
 			}
+		}
+		
+		public void addReturn(String type) {
+			if(type == null || type.isBlank()) return;
+			type = type.toLowerCase();
+			if(returns.contains(type)) return;
+			returns.add(type);
 		}
 		
 		public String getArgumentString() {
@@ -371,6 +380,14 @@ public class CodeSyntaxTreeAnalyser {
 			return sandbox;
 		}
 		
+		public List<String> getArgument(long min) {
+			return args.get(min);
+		}
+
+		public List<String> getReturnTypes() {
+			return returns;
+		}
+		
 		public String toString() {
 			String map = args.toString();
 			map = map.replace("{", "").replace("}", "")
@@ -383,10 +400,6 @@ public class CodeSyntaxTreeAnalyser {
 				getSandbox(),
 				getSizeString()
 			);
-		}
-
-		public List<String> getArgument(long min) {
-			return args.get(min);
 		}
 	}
 	

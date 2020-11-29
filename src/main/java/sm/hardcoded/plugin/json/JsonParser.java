@@ -1,6 +1,18 @@
-package sm.hardcoded.plugin.exporter;
+package sm.hardcoded.plugin.json;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 
 public class JsonParser {
+	public static JsonObject parseFromFile(File file) throws IOException {
+		FileInputStream stream = new FileInputStream(file);
+		byte[] bytes = stream.readAllBytes();
+		stream.close();
+		
+		return parse(bytes);
+	}
+	
 	public static JsonObject parse(byte[] bytes) {
 		return parse(new String(bytes));
 	}
@@ -131,6 +143,12 @@ public class JsonParser {
 	
 	private static Long parseLong(char[] ch, int[] idx) {
 		StringBuilder sb = new StringBuilder();
+		if(hasNext(ch, idx)) {
+			if(ch[idx[0]] == '-') {
+				sb.append("-");
+				idx[0]++;
+			}
+		}
 		
 		while(hasNext(ch, idx)) {
 			char c = ch[idx[0]];

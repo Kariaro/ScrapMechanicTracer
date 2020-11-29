@@ -1,18 +1,23 @@
 package sm.hardcoded.plugin.exporter;
 
-import java.util.LinkedList;
-import java.util.List;
-
 import sm.hardcoded.plugin.tracer.CodeSyntaxTreeAnalyser.TracedFunction;
+
+import java.util.*;
+
+import sm.hardcoded.plugin.json.*;
 import sm.hardcoded.plugin.tracer.SMClass;
 import sm.hardcoded.plugin.tracer.SMClass.Constant;
 import sm.hardcoded.plugin.tracer.SMClass.Function;
 
 public class JsonExporter {
+	// T ODO: Add type information and addresses
+	// T ODO: Add string positions and addresses
+	
 	public static SMClass deserialize(JsonObject json) {
 		SMClass table = new SMClass("sm");
+		if(json == null) return table;
 		
-		JsonMap map = json.toMap();
+		JsonMap map = json.toMap().getJsonMap("content");
 		for(String key : map.keySet()) {
 			SMClass clazz = table.createClass(key);
 			loadClassFromJson(clazz, map.getJsonMap(key));
@@ -44,10 +49,7 @@ public class JsonExporter {
 	}
 	
 	private static void loadFunctionFromJson(SMClass clazz, String name, boolean local, JsonMap map) {
-		// serial
 		String address = map.getString("address");
-		// hasTrace
-		
 		Function func = clazz.createFunction(address, name, local);
 		
 		// Min/Max args
@@ -73,7 +75,8 @@ public class JsonExporter {
 				
 				for(int i = 0; i < array.getSize(); i++) {
 					if(array.isNull(i)) continue;
-					else if(array.isString(i)) {
+					
+					if(array.isString(i)) {
 						trace.addType(i + 1, array.getString(i));
 					} else if(array.isArray(i)) {
 						JsonArray sub_array = array.getJsonArray(i);
@@ -83,11 +86,57 @@ public class JsonExporter {
 					}
 				}
 			}
+			
+			if(map.isArray("returns")) {
+				JsonArray array = map.getJsonArray("returns");
+				for(Object obj : array.copyOf()) {
+					if(obj == null) continue;
+					trace.addReturn(obj.toString());
+				}
+			}
 		}
 	}
 	
 	
-	public static JsonObject serialize(SMClass table) {
+	public static JsonObject serialize_default(SMClass table, String version, long time) {
+		return serialize(
+			table,
+			"HardCoded",
+			version,
+			"This json file was made by ScrapMechanicTracer https://github.com/Kariaro/ScrapMechanicTracer",
+			System.currentTimeMillis(),
+			Map.of(
+				"twitch", "https://www.twitch.tv/hard_coded",
+				"github", "https://github.com/Kariaro"
+			)
+		);
+	}
+	
+	public static JsonObject serialize(SMClass table, String author, String version, String comment, long time, Map<String, String> urls) {
+		JsonMap map = new JsonMap();
+		map.put("author", author);
+		map.put("version", version);
+		map.put("comment", comment);
+		map.put("time", time);
+		
+		{
+			JsonMap links = new JsonMap();
+			map.put("urls", links);
+			
+			if(urls != null) {
+				for(String key : urls.keySet()) {
+					links.put(key, urls.get(key));
+				}
+			}
+		}
+		
+		JsonMap json_map = toJson0(table);
+		map.put("content", json_map);
+		
+		return map;
+	}
+	
+	private static JsonMap toJson0(SMClass table) {
 		LinkedList<SMClass> list = new LinkedList<>();
 		list.add(table);
 		
@@ -197,6 +246,17 @@ public class JsonExporter {
 						for(String str : list) sub_array.add(str);
 					}
 				}
+			}
+		}
+		
+		if(trace == null) {
+			map.put("returns", null);
+		} else {
+			JsonArray array = new JsonArray();
+			map.put("returns", array);
+			
+			for(String str : trace.getReturnTypes()) {
+				array.add(str);
 			}
 		}
 		

@@ -3,7 +3,6 @@ package sm.hardcoded.plugin.tracer;
 import java.util.ArrayList;
 import java.util.List;
 
-import sm.hardcoded.plugin.exporter.JsonExporter;
 import sm.hardcoded.plugin.tracer.CodeSyntaxTreeAnalyser.TracedFunction;
 
 /**
@@ -102,11 +101,6 @@ public class SMClass {
 	
 	@Override
 	public String toString() {
-		if(true) {
-			return JsonExporter.serialize(this).toString(false);
-		}
-		
-		@SuppressWarnings("unused")
 		StringBuilder sb = new StringBuilder();
 		sb.append(name).append(" = {");
 		int length = constants.size() + classes.size() + functions.size() - 1;

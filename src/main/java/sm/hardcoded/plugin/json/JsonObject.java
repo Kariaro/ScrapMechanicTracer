@@ -1,4 +1,4 @@
-package sm.hardcoded.plugin.exporter;
+package sm.hardcoded.plugin.json;
 
 public abstract class JsonObject {
 	public abstract boolean isArray();

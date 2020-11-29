@@ -1,4 +1,4 @@
-package sm.hardcoded.plugin.exporter;
+package sm.hardcoded.plugin.json;
 
 import java.util.ArrayList;
 import java.util.List;

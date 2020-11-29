@@ -1,25 +1,30 @@
 package sm.hardcoded.plugin.exporter;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 
-import sm.hardcoded.plugin.html.SMHtml;
-import sm.hardcoded.plugin.tracer.SMClass;
-import sm.hardcoded.plugin.tracer.SMPrefs;
+import sm.hardcoded.plugin.json.JsonObject;
+import sm.hardcoded.plugin.json.JsonParser;
 
 public class Test {
 	public static void main(String[] args) throws IOException {
-		File file = new File("C:/Users/Admin/.smtracer/traces/lua.0.4.8.620.time.1606597301324.txt");
+		File file = new File("C:/Users/Admin/.smtracer/traces/lua.0.4.8.620.test.json");
+		File outputFile = new File("C:/Users/Admin/.smtracer/traces/simple.0.4.8.620.output.json");
 		
 		FileInputStream in = new FileInputStream(file);
 		byte[] bytes = in.readAllBytes();
 		in.close();
 		
-		SMClass table = JsonExporter.deserialize(JsonParser.parse(bytes));
-		System.out.println(table.getClass("shape").toString());
+		JsonObject test = JsonParser.parse(bytes);
 		
-		SMPrefs prefs = new SMPrefs();
-		SMHtml.generate(prefs, "0.4.8.testing", table);
+		JsonObject export = SmmJsonExporter.convert(test);
+		
+		FileOutputStream out = new FileOutputStream(outputFile);
+		out.write(export.toString().getBytes());
+		out.close();
+		
+		//SMClass table = JsonExporter.deserialize(JsonParser.parse(bytes));
+		//System.out.println(table.getClass("shape").toString());
+		//SMPrefs prefs = new SMPrefs();
+		//SMHtml.generate(prefs, "0.4.8.testing", table);
 	}
 }

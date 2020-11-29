@@ -9,6 +9,9 @@ import ghidra.app.decompiler.DecompInterface;
 import ghidra.program.model.address.AddressFactory;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.MemoryAccessException;
+import ghidra.util.Msg;
+import sm.hardcoded.plugin.exporter.JsonExporter;
+import sm.hardcoded.plugin.json.JsonObject;
 import sm.hardcoded.plugin.tracer.CodeSyntaxTreeAnalyser.TracedFunction;
 
 /**
@@ -111,6 +114,30 @@ class ScrapMechanicAnalyser {
 		// Read and display the version and functions
 		informationAnalyser.analyse(table);
 		
+		// testScan(table); if(true) return true;
+		
+		try {
+			scanAllFunctions(table);
+		} catch(Exception e) {
+			Logger.log(e);
+		} finally {
+			// Make sure we close it
+			isRunning = false;
+		}
+		
+		// Step 3:
+		//     Dump all the arguments and constants in a pretty format to the selected
+		//     file path 'provider.getScanPath()' and give it the file name
+		//     lua.<Version>.<Date yyyy.mm.dd.hh.MM.ss>.log
+		save(table);
+		
+		provider.writeLog(this, "Done. Took " + (System.currentTimeMillis() - startTime) + " ms");
+		Msg.showInfo(this, provider.getComponent(), "Scan finished", "The scan finished.\nPress [Open Save Path] to view the results.");
+		return true;
+	}
+	
+	@SuppressWarnings("unused")
+	private void testScan(SMClass table) {
 //		SMClass.Function func = table.getClass("localPlayer").getFunction("updateFpAnimation");
 //		//SMClass.Function func = table.getClass("localPlayer").getFunction("addRenderable");
 ////		provider.writeLog(this, "Function -> " + (func == null ? null:func.getAddress()));
@@ -130,6 +157,7 @@ class ScrapMechanicAnalyser {
 //				if(!decomp.openProgram(plugin.getCurrentProgram())) {
 //					throw new Exception("Failed to open program [ " + plugin.getCurrentProgram() + " ] : " + decomp.getLastMessage());
 //				}
+//				
 //				CodeSyntaxResolver resolver = new CodeSyntaxResolver(cstAnalyser, decomp);
 //				resolver.setDebug(true);
 //				// 006f22e0
@@ -147,27 +175,6 @@ class ScrapMechanicAnalyser {
 //			
 //			if(true) return true;
 //		}
-		
-		try {
-			scanAllFunctions(table);
-		} catch(Exception e) {
-			Logger.log(e);
-		} finally {
-			// Make sure we close it
-			isRunning = false;
-		}
-		
-		// Step 3:
-		//     Dump all the arguments and constants in a pretty format to the selected
-		//     file path 'provider.getScanPath()' and give it the file name
-		//     lua.<Version>.<Date yyyy.mm.dd.hh.MM.ss>.log
-		save(table);
-		
-		// Testing
-		//SMHtml.generate(prefs, provider.getVersionString(), table);
-		
-		provider.writeLog(this, "Done. Took " + (System.currentTimeMillis() - startTime) + " ms");
-		return true;
 	}
 	
 	private boolean isRunning = false;
@@ -245,7 +252,7 @@ class ScrapMechanicAnalyser {
 			try {
 				thread.join();
 			} catch(InterruptedException e) {
-				e.printStackTrace();
+				Logger.log(e);
 			}
 		}
 		
@@ -266,8 +273,9 @@ class ScrapMechanicAnalyser {
 		File file = new File(prefs.getTracePath());
 		file.mkdirs();
 		
-		String traceString = table.toString();
-		File traceFile = new File(file, "lua." + provider.getVersionString() + ".time." + System.currentTimeMillis() + ".txt");
+		JsonObject json = JsonExporter.serialize_default(table, provider.getVersionString(), System.currentTimeMillis());
+		String traceString = json.toString();
+		File traceFile = new File(file, provider.getVersionString() + "." + System.currentTimeMillis() + ".trace");
 		try(DataOutputStream stream = new DataOutputStream(new FileOutputStream(traceFile))) {
 			stream.write(traceString.getBytes());
 		} catch(IOException e) {
