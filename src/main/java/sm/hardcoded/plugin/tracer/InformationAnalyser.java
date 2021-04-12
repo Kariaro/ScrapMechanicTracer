@@ -88,6 +88,7 @@ class InformationAnalyser {
 		String version = "<invalid>";
 		String buildVersion = null;
 		
+		// FIXME: This is unsafe. This should use the same type of code as the CodeSyntaxResolver!
 		boolean skipNext = false;
 		while((iter = iter.getNext()) != null) {
 			Address addr = iter.getAddress();

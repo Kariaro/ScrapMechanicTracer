@@ -6,10 +6,10 @@ import java.util.List;
 
 import resources.ResourceManager;
 import sm.hardcoded.plugin.tracer.CodeSyntaxTreeAnalyser.TracedFunction;
-import sm.hardcoded.plugin.tracer.Logger;
 import sm.hardcoded.plugin.tracer.SMClass;
 import sm.hardcoded.plugin.tracer.SMClass.Constant;
 import sm.hardcoded.plugin.tracer.SMClass.Function;
+import sm.hardcoded.plugin.utils.Logger;
 import sm.hardcoded.plugin.tracer.SMPrefs;
 
 /**

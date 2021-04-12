@@ -19,6 +19,7 @@ import ghidra.program.model.symbol.SourceType;
 import ghidra.util.task.TaskMonitor;
 import sm.hardcoded.plugin.tracer.CodeSyntaxTreeAnalyser.NodeFunction;
 import sm.hardcoded.plugin.tracer.CodeSyntaxTreeAnalyser.TracedFunction;
+import sm.hardcoded.plugin.utils.Logger;
 
 /**
  * It is important that this class is not called from multiple threads.

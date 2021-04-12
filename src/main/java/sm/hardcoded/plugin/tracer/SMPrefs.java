@@ -4,6 +4,8 @@ import java.io.*;
 import java.util.Objects;
 import java.util.Properties;
 
+import sm.hardcoded.plugin.utils.Logger;
+
 /**
  * This class is used to store some user specific preferences for this plugin.
  *  

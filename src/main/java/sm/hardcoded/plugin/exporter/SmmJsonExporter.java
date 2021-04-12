@@ -164,7 +164,11 @@ public class SmmJsonExporter {
 						for(String str : list) types.add(str);
 					}
 				}
+				
+				// FIXME: DEBUG
+				map.put("args", max_arg);
 			}
+			
 		}
 		
 		{

@@ -28,6 +28,7 @@ import sm.hardcoded.plugin.html.SMHtml;
 import sm.hardcoded.plugin.json.JsonMap;
 import sm.hardcoded.plugin.json.JsonObject;
 import sm.hardcoded.plugin.json.JsonParser;
+import sm.hardcoded.plugin.utils.Logger;
 
 /**
  * This class is the window provider for the ScrapMechanicTracer GhidraPlugin.
@@ -700,6 +701,7 @@ public class ScrapMechanicWindowProvider extends ComponentProviderAdapter {
 				}
 				
 				SMClass table = JsonExporter.deserialize(json);
+				System.out.println(table);
 				File file = new File(prefs.getTracePath());
 				file.mkdirs();
 				

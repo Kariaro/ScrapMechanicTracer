@@ -18,6 +18,7 @@ import ghidra.framework.plugintool.util.PluginStatus;
 import ghidra.program.model.listing.Program;
 import ghidra.util.Msg;
 import resources.ResourceManager;
+import sm.hardcoded.plugin.utils.Logger;
 
 @PluginInfo(
 	// Released because it's tested enough
@@ -29,6 +30,8 @@ import resources.ResourceManager;
 	isSlowInstallation = false
 )
 public class ScrapMechanicPlugin extends ProgramPlugin implements FrontEndable {
+	// TODO: Make this plugin headless to just make a nice gui to ONLY trace a single exe file ? (Overkill?)
+	
 	private ScrapMechanicWindowProvider provider;
 	private ScrapMechanicBookmarkManager bookmarkManager;
 	private ScrapMechanicAnalyser analyser;

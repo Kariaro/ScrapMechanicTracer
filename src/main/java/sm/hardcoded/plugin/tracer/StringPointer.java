@@ -10,4 +10,9 @@ class StringPointer {
 		this.addr = addr;
 		this.str = str;
 	}
+	
+	@Override
+	public String toString() {
+		return addr + ":" + str;
+	}
 }

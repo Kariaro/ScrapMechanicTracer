@@ -32,11 +32,11 @@ class FunctionAnalyser {
 					Address nameAddr = programMemory.readAddress(address);
 					if(nameAddr == null || nameAddr.getOffset() == 0) break;
 					
-					Address funcAddr = programMemory.readAddress(address.add(4));
+					Address funcAddr = programMemory.readAddress(address.add(programMemory.getAddressSize()));
 					String name = programMemory.readTerminatedString(nameAddr);
 					clazz.createFunction(funcAddr.toString(), name, false);
 					
-					address = address.add(8);
+					address = address.add(programMemory.getAddressSize() * 2);
 				} while(max-- > 0);
 			}
 		}
@@ -49,11 +49,11 @@ class FunctionAnalyser {
 					Address nameAddr = programMemory.readAddress(address);
 					if(nameAddr == null || nameAddr.getOffset() == 0) break;
 					
-					Address funcAddr = programMemory.readAddress(address.add(4));
+					Address funcAddr = programMemory.readAddress(address.add(programMemory.getAddressSize()));
 					String name = programMemory.readTerminatedString(nameAddr);
 					clazz.createFunction(funcAddr.toString(), name, true);
 					
-					address = address.add(8);
+					address = address.add(programMemory.getAddressSize() * 2);
 				} while(max-- > 0);
 			}
 		}
@@ -66,11 +66,11 @@ class FunctionAnalyser {
 					Address nameAddr = programMemory.readAddress(address);
 					if(nameAddr == null || nameAddr.getOffset() == 0) break;
 					
-					Address funcAddr = programMemory.readAddress(address.add(4));
+					Address funcAddr = programMemory.readAddress(address.add(programMemory.getAddressSize()));
 					String name = programMemory.readTerminatedString(nameAddr);
 					clazz.createFunction(funcAddr.toString(), name, false);
 					
-					address = address.add(8);
+					address = address.add(programMemory.getAddressSize() * 2);
 				} while(max-- > 0);
 			}
 		}

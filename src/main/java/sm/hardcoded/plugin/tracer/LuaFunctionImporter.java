@@ -9,6 +9,7 @@ import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionSignature;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.symbol.*;
+import sm.hardcoded.plugin.utils.Logger;
 
 /**
  * This class imports the function signatures for each lua command.

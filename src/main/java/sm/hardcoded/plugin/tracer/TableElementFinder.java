@@ -48,6 +48,28 @@ class TableElementFinder {
 					continue;
 				}
 				
+				case "LEA": {
+					list.add(iter);
+					/*
+					String check = getAddress(iter, 1);
+					System.out.println(check);
+					
+					if(check != null) {
+						
+					}
+					*/
+					
+					if(push_find != null) {
+						String check = getAddress(iter, 1);
+						
+						if(push_find.equals(check)) {
+							Msg.debug(this, String.format("    : CreateConstant( constant = %s )", list.get(0).getAddress(0)));
+							object.importConstant(getAddress(list.get(0), 1));
+						}
+					}
+					continue;
+				}
+				/*
 				case "PUSH": {
 					list.add(iter);
 					
@@ -55,30 +77,32 @@ class TableElementFinder {
 						String check = getAddress(iter, 0);
 						
 						if(push_find.equals(check)) {
-							// Msg.debug(this, String.format("    : CreateConstant( constant = %s )", list.get(0).getAddress(0)));
+							Msg.debug(this, String.format("    : CreateConstant( constant = %s )", list.get(0).getAddress(0)));
 							object.importConstant(getAddress(list.get(0), 0));
 						}
 					}
 					
 					continue;
 				}
+				*/
 				case "CALL": {
 					if(list.size() >= 3) {
 						int size = list.size();
-						String addr_0 = getAddress(list.get(size - 3), 0);
-						String addr_1 = getAddress(list.get(size - 2), 0);
-						String addr_2 = getAddress(list.get(size - 1), 0);
+						String addr_0 = getAddress(list.get(size - 3), 1);
+						String addr_1 = getAddress(list.get(size - 2), 1);
+						String addr_2 = getAddress(list.get(size - 1), 1);
 						
-						if(addr_2 == null) {
-							// Msg.debug(this, String.format("    : luaL_register( table = %s, name = %s )", addr_0, addr_1));
-							object.importRegister(addr_1, addr_0);
+						if(list.size() == 3) {
+							System.out.println(addr_1 + ", " + func.stringPointer.addr + " / " + func.name);
+							Msg.debug(this, String.format("    : luaL_register( table = %s, name = %s )", addr_2, addr_1));
+							object.importRegister(addr_2, addr_1);
 							
 							push_find = addr_1;
 						} else {
-							// Msg.debug(this, String.format("    : CreateUserdata( table = %s, userdata = %s, type = %s )", addr_0, addr_1, addr_2));
-							object.importUserdata(addr_0, addr_1, addr_2);
-							
-							// LuaTypes.INSTANCE.addType(plugin, addr_2);
+							if(addr_0 != null && addr_1 != null && addr_2 != null) {
+								Msg.debug(this, String.format("    : CreateUserdata( table = %s, userdata = %s, type = %s )", addr_0, addr_1, addr_2));
+								object.importUserdata(addr_0, addr_1, addr_2);
+							}
 						}
 					}
 					
@@ -92,11 +116,13 @@ class TableElementFinder {
 	
 	public String getAddress(Instruction i, int index) {
 		String string = i.getDefaultOperandRepresentation(index);
+		
+		if(string.contains("[")) string = string.replaceAll("[\\[\\]]", "");
 		if(string.startsWith("0x")) string = string.substring(2);
 		
 		try {
-			int value = Integer.valueOf(string, 16);
-			return String.format("%08x", value);
+			long value = Long.valueOf(string, 16);
+			return String.format("%016x", value);
 		} catch(NumberFormatException e) {
 			return null;
 		}

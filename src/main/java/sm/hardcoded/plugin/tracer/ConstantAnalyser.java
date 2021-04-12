@@ -15,18 +15,18 @@ class ConstantAnalyser {
 		if(currentProgram == null) return;
 		
 		AddressFactory factory = currentProgram.getAddressFactory();
-		ProgramMemory programMemory = plugin.getProgramMemory();
+		ProgramMemory memory = plugin.getProgramMemory();
 		
 		if(definiton.getConstant() != null) {
 			Address address = factory.getAddress(definiton.getConstant());
 			if(address != null) {
 				int max = 256;
 				do {
-					Address nameAddr = programMemory.readAddress(address);
+					Address nameAddr = memory.readAddress(address);
 					if(nameAddr == null || nameAddr.getOffset() == 0) break;
 					
-					Address funcAddr = programMemory.readAddress(address.add(4));
-					String name = programMemory.readTerminatedString(nameAddr);
+					Address funcAddr = memory.readAddress(address.add(memory.getAddressSize()));
+					String name = memory.readTerminatedString(nameAddr);
 					clazz.createConstant(funcAddr.toString(), name, null);
 					
 					address = address.add(8);

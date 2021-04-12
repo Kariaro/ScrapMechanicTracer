@@ -100,21 +100,39 @@ class TableFinder {
 			
 			plugin.getWindow().setProgressBar(0);
 			
+			// TODO: Print sucessfull function pointers found
 			int pointerIndex = 0;
 			for(StringPointer string : stringPointers) {
 				List<Address> matches = memory.findMatches(string.addr);
 				
+				if(!matches.isEmpty()) {
+					Address last = matches.get(matches.size() - 1);
+					matches.clear();
+					matches.add(last); //???
+				}
+				
+				System.out.println("string: " + string.str + ", " + matches);
 				boolean found = false;
 				for(Address address : matches) {
-					Address ptr = memory.readAddress(address.add(4));
+					Address ptr = memory.readAddress(address.add(memory.getAddressSize()));
 					if(!memory.isValidAddress(ptr)) continue;
 					
 					byte[] info = memory.getBytes(ptr.subtract(1), 2);
+					// System.out.println("       : " + address + ", " + String.format("%02x%02x", info[0], info[1]));
 					
 					// If the pointer address has 0 infront of it.
 					// then it's probably not inside a function
+					
+					// Almost all compilers fill the empty space between functions with 0xCC
+					// this could become a problem if the functions perfectly align and does
+					// not separate with 0xCC
 					if(info[0] == 0) continue;
-					if(info[1] != 0x55) continue; // PUSH EBP
+					//if(info[0] != 0xCC) continue;
+					// New version does not have PUSH EBP first.
+					// Probably because of a new optimization of the compiler. It starts with
+					// 48 89 5C 24 10, MOV qword ptr [RSP + 0x10], RBX
+					// 48 89 6C 24 18, MOV qword ptr [RSP + 0x18], RBP
+					//if(info[1] != 0x55) continue; // PUSH EBP
 					
 					if(found) {
 						// TODO: Remove the other same pointer because it might be wrong.
@@ -132,7 +150,8 @@ class TableFinder {
 					// LEA, MOV, PUSH
 					// 68 /* PUSH */, string_address
 					
-					// Msg.debug(this, "Pointer for ('" + string.str + "') [" + address + "] [" + ptr + "]");
+					//Msg.debug(this, "Pointer for ('" + string.str + "') [" + address + "] [" + ptr + "]");
+					plugin.getWindow().writeLog(this, "Pointer for ('" + string.str + "') [" + address + "] [" + ptr + "]");
 					
 					tables.add(new FunctionPointer(string, ptr, address));
 					manager.addBookmark(ptr, BookmarkCategory.DEFINING_FUNCTION, string.addr + ", " + address);

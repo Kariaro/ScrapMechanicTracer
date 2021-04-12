@@ -50,13 +50,21 @@ class ProgramMemory {
 	}
 	
 	public List<Address> findMatches(Address addr) {
-		int offset = (int)addr.getOffset();
-		return findMatches(
+		long offset = addr.getOffset();
+		byte[] bytes = new byte[getAddressSize()];
+		
+		for(int i = 0; i < bytes.length; i++) {
+			bytes[i] = (byte)((offset >> (8L * i)) & 0xff);
+		}
+		
+		/*return findMatches(
 			(offset      ) & 0xff,
 			(offset >>  8) & 0xff,
 			(offset >> 16) & 0xff,
 			(offset >> 24) & 0xff
-		);
+		);*/
+		
+		return findMatches(bytes);
 	}
 	
 	public List<Address> findMatches(int... pattern) {
@@ -87,12 +95,26 @@ class ProgramMemory {
 	}
 	
 	public Address readAddress(Address addr) {
-		byte[] bytes = getBytes(addr, 4);
+		byte[] bytes = getBytes(addr, getAddressSize());
+		StringBuilder sb = new StringBuilder();
+		for(int i = 0; i < bytes.length; i++) {
+			sb.insert(0, String.format("%02x", bytes[i]));
+		}
+		return plugin.getCurrentProgram().getAddressFactory().getAddress(sb.toString());
+		/*
 		return plugin.getCurrentProgram().getAddressFactory().getAddress(
-			String.format("%02x%02x%02x%02x", bytes[3], bytes[2], bytes[1], bytes[0])
+			String.format("%02x".repeat(bytes.length), bytes[3], bytes[2], bytes[1], bytes[0])
 		);
+		*/
 	}
 	
+	@Deprecated(forRemoval = true)
+	/**
+	 * This was used to read the pointer of a position this is now deprecated because 
+	 * the pointer size could change
+	 * @param addr
+	 * @return
+	 */
 	public int readInt(Address addr) {
 		byte[] bytes = getBytes(addr, 4);
 		
@@ -100,6 +122,24 @@ class ProgramMemory {
 			   ((bytes[1] & 0xff) << 8) |
 			   ((bytes[2] & 0xff) << 16) |
 			   ((bytes[3] & 0xff) << 24);
+	}
+	
+	// TODO: Make sure this is correct
+	public long readWithAddressSize(Address addr) {
+		byte[] bytes = getBytes(addr, getAddressSize());
+		long result = 0;
+		
+		for(int i = 0; i < 8; i++) {
+			result |= ((bytes[i] & 0xffL) << (8L * i));
+		}
+		
+		return result;
+		/*
+		return (bytes[0] & 0xff) |
+			   ((bytes[1] & 0xff) << 8) |
+			   ((bytes[2] & 0xff) << 16) |
+			   ((bytes[3] & 0xff) << 24);
+		*/
 	}
 	
 	public byte[] getBytes(Address addr, int size) {
@@ -160,5 +200,9 @@ class ProgramMemory {
 		}
 		
 		return null;
+	}
+	
+	public int getAddressSize() {
+		return plugin.getCurrentProgram().getDefaultPointerSize();
 	}
 }

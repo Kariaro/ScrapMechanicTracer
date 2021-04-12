@@ -120,7 +120,7 @@ class SMDefinition {
 		if(string == null || string.equals("null")) return null;
 		
 		try {
-			int value = Integer.valueOf(string, 16);
+			long value = Long.valueOf(string, 16);
 			return String.format("%08x", value);
 		} catch(NumberFormatException e) {
 			return null;

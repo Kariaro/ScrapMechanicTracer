@@ -297,7 +297,7 @@ public class CodeSyntaxTreeAnalyser {
 		}
 		
 		public String getArgumentString() {
-			if((minimum_args == maximum_args) && minimum_args == null) return "";
+			//if((minimum_args == maximum_args) && minimum_args == null) return "";
 			
 			long min = 1, max = 1;
 			if(minimum_args != null) min = minimum_args;

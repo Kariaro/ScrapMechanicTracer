@@ -78,7 +78,8 @@ class LuaTypeManager {
 			Address nameAddress = memory.readAddress(address);
 			
 			name = memory.readTerminatedString(nameAddress);
-			id = memory.readInt(address.add(4));
+			//id = memory.readInt(address.add(memory.getAddressSize()));
+			id = memory.readInt(address.add(memory.getAddressSize()));
 			
 			manager.addBookmark(address, BookmarkCategory.LUA_TYPE, name + ", " + id);
 		}

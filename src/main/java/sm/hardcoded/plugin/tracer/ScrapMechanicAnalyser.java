@@ -13,6 +13,7 @@ import ghidra.util.Msg;
 import sm.hardcoded.plugin.exporter.JsonExporter;
 import sm.hardcoded.plugin.json.JsonObject;
 import sm.hardcoded.plugin.tracer.CodeSyntaxTreeAnalyser.TracedFunction;
+import sm.hardcoded.plugin.utils.Logger;
 
 /**
  * Used to analsyse a scrap mechanic executable.
@@ -105,8 +106,20 @@ class ScrapMechanicAnalyser {
 		
 		// Read all the functions and constants found in the table found in memory
 		for(SMDefinition object : objects) {
+			if(object.getName() == null) {
+				System.out.println("[SMDefinition] Was null! " + object);
+				continue;
+			}
+			
+			//if(!object.getBasePointer().equals("140dbaf80")) continue;
+			
 			String name = programMemory.readTerminatedString(factory.getAddress(object.getName()));
+			System.out.println(object + ": " + name + ", " + factory.getAddress(object.getName()));
 			SMClass clazz = table.createClass(name);
+			if(clazz == null) {
+				System.out.println("[SMClass] was null!!");
+				continue;
+			}
 			functionAnalyser.analyseFunctions(clazz, object);
 			constantAnalyser.analyseConstants(clazz, object);
 		}
@@ -115,6 +128,9 @@ class ScrapMechanicAnalyser {
 		informationAnalyser.analyse(table);
 		
 		// testScan(table); if(true) return true;
+		
+		// TODO: sm.world is a bit different
+		//       Make sure all of them works!
 		
 		try {
 			scanAllFunctions(table);
@@ -273,9 +289,14 @@ class ScrapMechanicAnalyser {
 		File file = new File(prefs.getTracePath());
 		file.mkdirs();
 		
-		JsonObject json = JsonExporter.serialize_default(table, provider.getVersionString(), System.currentTimeMillis());
+		String ver = provider.getVersionString();
+		ver = ver.replaceAll("[<>]", "");
+		JsonObject json = JsonExporter.serialize_default(table, ver, System.currentTimeMillis());
 		String traceString = json.toString();
-		File traceFile = new File(file, provider.getVersionString() + "." + System.currentTimeMillis() + ".trace");
+		
+		String name = provider.getVersionString();
+		name = name.replaceAll("[<>]", ""); // TODO: Remove all invalid characters
+		File traceFile = new File(file, name + "." + System.currentTimeMillis() + ".trace");
 		try(DataOutputStream stream = new DataOutputStream(new FileOutputStream(traceFile))) {
 			stream.write(traceString.getBytes());
 		} catch(IOException e) {

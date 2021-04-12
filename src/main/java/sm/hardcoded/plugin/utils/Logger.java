@@ -1,4 +1,4 @@
-package sm.hardcoded.plugin.tracer;
+package sm.hardcoded.plugin.utils;
 
 import ghidra.util.SystemUtilities;
 

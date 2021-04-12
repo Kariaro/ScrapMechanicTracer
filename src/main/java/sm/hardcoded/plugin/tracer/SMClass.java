@@ -220,6 +220,8 @@ public class SMClass {
 		
 		// Ugly
 		public String toString() {
+			System.out.println(trace);
+			
 			StringBuilder sb = new StringBuilder();
 			if(local) sb.append("[userdata] ");
 			
@@ -235,6 +237,7 @@ public class SMClass {
 				sb.append("() <no trace>");
 			} else {
 				String args = trace.getArgumentString();
+				System.out.println("Trace_Args: " + args);
 				if(args.isEmpty()) {
 					sb.append("() ");
 				} else {
