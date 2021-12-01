@@ -1,5 +1,10 @@
 # Scrap Mechanic lua API
 
+## Documentation Webpage (New)
+All function information and official documentation has been combined into a documentation webpage:
+https://gamedocs.github.io/
+
+## Info
 This plugin was made for Ghidra 9.2 and uses java 15.0.1.
 
 This plugin loads all lua functions inside of the game Scrap Mechanic and tries to figure
